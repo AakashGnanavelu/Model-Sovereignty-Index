@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Model Sovereignty Dashboard</title>
+    <link rel="stylesheet" href="styles.css" />
+    <link
+      rel="preconnect"
+      href="https://fonts.googleapis.com"
+    />
+    <link
+      rel="preconnect"
+      href="https://fonts.gstatic.com"
+      crossorigin
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+    <header class="top-bar">
+      <div class="container">
+      <div class="top-bar__brand">
+        <a
+          href="https://publicai.network/"
+          class="brand-link"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          <img
+            src="logo-fixed.png"
+            alt="Public AI logo"
+            height="40"
+            width="280"
+            class="brand-logo"
+          />
+          <div class="brand-text">
+            <div class="brand-text__title">Model Sovereignty Index</div>
+          </div>
+        </a>
+      </div>
+      </div>
+    </header>
+
+    <main class="page">
+      <section class="panel panel--summary">
+        <div class="panel__header">
+          <h2>Overview</h2>
+        </div>
+        <div class="summary-grid">
+          <div class="summary-card">
+            <div class="summary-card__label">Models in dataset</div>
+            <div id="summary-model-count" class="summary-card__value">–</div>
+          </div>
+          <div class="summary-card">
+            <div class="summary-card__label">Average sovereignty score</div>
+            <div id="summary-avg-score" class="summary-card__value">–</div>
+          </div>
+          <div class="summary-card">
+            <div class="summary-card__label">Unique organisations</div>
+            <div id="summary-org-count" class="summary-card__value">–</div>
+          </div>
+          <div class="summary-card">
+            <div class="summary-card__label">Countries represented</div>
+            <div id="summary-country-count" class="summary-card__value">–</div>
+          </div>
+        </div>
+      </section>
+
+      <section class="layout">
+        <section class="panel panel--left">
+          <div class="panel__header panel__header--with-controls">
+            <h2>Models</h2>
+          </div>
+          <div class="controls">
+            <label class="control control--search">
+              <span>Search</span>
+              <input
+                id="search-input"
+                type="search"
+                placeholder="Filter by model, organisation, or country…"
+              />
+            </label>
+            <label class="control">
+              <span>Organisation type</span>
+              <select id="filter-org-type">
+                <option value="">All</option>
+                <option value="State-backed">State-backed</option>
+                <option value="Big Tech">Big Tech</option>
+                <option value="Independent">Independent</option>
+                <option value="Community">Community</option>
+                <option value="Non-profit">Non-profit</option>
+                <option value="Academic">Academic</option>
+              </select>
+            </label>
+            <label class="control">
+              <span>Sort by</span>
+              <select id="sort-by">
+                <option value="overall_score_desc">Score (high → low)</option>
+                <option value="overall_score_asc">Score (low → high)</option>
+                <option value="name_asc">Name (A → Z)</option>
+                <option value="organisation_asc">Organisation (A → Z)</option>
+              </select>
+            </label>
+          </div>
+
+          <div class="table-wrapper">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Model</th>
+                  <th>Organisation</th>
+                  <th>Country</th>
+                  <th class="table__th--numeric">Score</th>
+                </tr>
+              </thead>
+              <tbody id="models-table-body">
+                <!-- Populated by app.js -->
+              </tbody>
+            </table>
+          </div>
+          <div id="pagination" class="pagination">
+            <!-- Populated by app.js -->
+          </div>
+        </section>
+
+        <section class="panel panel--right">
+          <div class="panel__header">
+            <h2>Details &amp; Dimensions</h2>
+          </div>
+
+          <div id="details-placeholder" class="details-placeholder">
+            Select a model from the table to view its sovereignty dimensions.
+          </div>
+
+          <div id="details-card" class="details-card hidden">
+            <div class="details-card__header">
+              <div>
+                <div id="details-name" class="details-card__title"></div>
+                <div id="details-meta" class="details-card__meta"></div>
+              </div>
+              <div class="details-card__score">
+                <div class="details-card__score-label">Overall score</div>
+                <div id="details-score" class="details-card__score-value"></div>
+              </div>
+            </div>
+
+            <div class="details-card__section">
+              <h3>Per-dimension scores (0–1)</h3>
+              <p class="hint-text">Click a dimension to see supporting evidence and sources.</p>
+              <div id="details-dimensions" class="dimensions-list">
+                <!-- Each dimension will be clickable -->
+              </div>
+              
+              <div id="details-dimension-evidence" class="dimension-evidence hidden">
+                <h4 id="evidence-title"></h4>
+                <div id="evidence-content"></div>
+              </div>
+            </div>
+
+            <div class="details-card__section">
+              <h3>How the score was derived</h3>
+              <p id="details-explanation" class="details-card__text">
+                <!-- Filled by app.js -->
+              </p>
+            </div>
+
+            <div class="details-card__section">
+              <h3>Scraped evidence sources</h3>
+              <div id="details-sources" class="sources-list">
+                <!-- Filled by app.js -->
+              </div>
+            </div>
+          </div>
+        </section>
+      </section>
+      <section class="panel panel--methodology">
+        <div class="panel__header">
+          <h2>How to interpret this dashboard</h2>
+        </div>
+        <div class="methodology-grid">
+      
+          <div class="methodology-item">
+            <h3>What data is shown?</h3>
+            <p>
+              The table is generated from the <code>public-ai</code> sovereignty pipeline,
+              which evaluates models using Hugging Face metadata and, optionally, supporting
+              web evidence. Each entry includes a sovereignty score and a breakdown across
+              key dimensions.
+            </p>
+            <p>
+              In this demo, the dataset is a static snapshot
+              (<code>data/models.json</code>). In a full deployment, this would be
+              continuously generated by analysing live model cards, organisation metadata,
+              and external documentation.
+            </p>
+          </div>
+      
+          <div class="methodology-item">
+            <h3>What “sovereignty” means here</h3>
+            <p>
+              In this dashboard, sovereignty refers to the degree of <strong>control,
+              independence, and local alignment</strong> of an AI model. This includes:
+            </p>
+            <ul>
+              <li>Whether the model can be run and controlled independently</li>
+              <li>Whether its development is tied to a specific country or institution</li>
+              <li>How transparent its data and training process are</li>
+            </ul>
+            <p>
+              This definition intentionally combines technical, organisational, and
+              geopolitical factors into a single comparative framework.
+            </p>
+          </div>
+      
+          <div class="methodology-item">
+            <h3>Dimensions used</h3>
+            <p>
+              Each model is evaluated across six dimensions:
+            </p>
+            <ul>
+              <li><strong>Training data privacy</strong> – whether the dataset is private or openly described</li>
+              <li><strong>Local training</strong> – whether the model is developed within a specific national or institutional context</li>
+              <li><strong>Control of weights</strong> – whether weights are open and can be self-hosted</li>
+              <li><strong>Model independence</strong> – whether the model is trained from scratch or derived from another model</li>
+              <li><strong>Weight privacy</strong> – whether weights are restricted or publicly available</li>
+              <li><strong>Country-specific knowledge</strong> – whether the model reflects local language, policy, or culture</li>
+            </ul>
+            <p>
+              Each dimension is scored between <code>0</code> and <code>1</code>, where higher
+              values indicate greater sovereignty along that axis.
+            </p>
+          </div>
+      
+          <div class="methodology-item">
+            <h3>How scores are calculated</h3>
+            <p>
+              Each dimension starts with a neutral score of <code>0.5</code>, then is adjusted
+              using heuristics derived from model metadata:
+            </p>
+            <ul>
+              <li>Open licenses increase control of weights but reduce weight privacy</li>
+              <li>Presence of a base model lowers independence (indicating fine-tuning)</li>
+              <li>Known public or state-backed organisations increase local and country-specific scores</li>
+              <li>Transparency signals (e.g. “open”, “transparent”) reduce training data privacy</li>
+            </ul>
+            <p>
+              When web evidence is enabled, the system can either:
+            </p>
+            <ul>
+              <li>Apply keyword-based adjustments (e.g. “sovereign”, “open data”)</li>
+              <li>Or use a language model to estimate scores from external sources</li>
+            </ul>
+            <p>
+              The final score is computed as a weighted average of all six dimensions
+              (equal weighting by default), and scaled to a <code>0–100</code> range.
+            </p>
+          </div>
+      
+          <div class="methodology-item">
+            <h3>Data sources and signals</h3>
+            <p>
+              The pipeline relies primarily on structured metadata from Hugging Face,
+              including model cards, tags, licences, and organisation names. Additional
+              signals may be extracted from external web documents when available.
+            </p>
+            <p>
+              Because metadata is often incomplete or inconsistent, the system uses
+              heuristic pattern matching rather than strict verification. This allows
+              broad coverage but introduces some uncertainty.
+            </p>
+          </div>
+      
+          <div class="methodology-item">
+            <h3>Interpretation and limitations</h3>
+            <p>
+              This score is a heuristic approximation, not a definitive label. It blends
+              multiple interpretations of sovereignty—such as openness, control, and
+              national alignment—which can sometimes conflict. For example, open weights
+              increase usability and control, but reduce privacy.
+            </p>
+            <p>
+              Scores are sensitive to metadata quality and should be interpreted as
+              <strong>directional indicators</strong> rather than precise measurements.
+              The dashboard is best used for comparison and exploration, alongside
+              detailed model documentation.
+            </p>
+          </div>
+      
+        </div>
+      </section>
+    </main>
+
+    <script src="app.js"></script>
+  </body>
+</html>
+
