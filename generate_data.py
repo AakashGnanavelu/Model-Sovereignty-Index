@@ -48,7 +48,7 @@ MODELS = [
     "allenai/Olmo-3-7B-Think",
     "allenai/Olmo-3-7B-Instruct",
 
-    # MOLMO (AllenAI)
+    # # MOLMO (AllenAI)
     "allenai/Molmo-7B-O-0924",
 
     # Pythia (EleutherAI official family)

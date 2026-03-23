@@ -5,10 +5,12 @@ Higher = more sovereign (local control, transparent data, open weights, etc.).
 import re
 import sys
 from pathlib import Path
+import requests
 import os
 from pipeline.ask import ask_publicai
 import json
 from typing import Any, Optional
+from pipeline.sources import fetch_huggingface_model, fetch_web_evidence
 
 if str(Path(__file__).resolve().parent.parent) not in sys.path:
     sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
@@ -19,6 +21,112 @@ OPEN_LICENSES = {
     "cc-by-sa-4.0", "openrail", "openrail++", "bigscience-openrail-m",
     "afl-3.0", "artistic-2.0", "gpl-3.0", "lgpl-3.0", "llama2",
 }
+
+COUNTRY_KEYWORDS = {
+        # 🇨🇭 Switzerland
+        "swiss": "Switzerland",
+        "switzerland": "Switzerland",
+
+        # 🇸🇪 Sweden
+        "sweden": "Sweden",
+        "ai-sweden": "Sweden",
+
+        # 🇸🇬 Singapore
+        "aisingapore": "Singapore",
+        "ai singapore": "Singapore",
+        "singapore": "Singapore",
+        "sea-lion": "Singapore",
+
+        # 🇬🇧 United Kingdom
+        "uk": "United Kingdom",
+        "united kingdom": "United Kingdom",
+        "britain": "United Kingdom",
+        "ucl": "United Kingdom",
+        "oxford": "United Kingdom",
+        "cambridge": "United Kingdom",
+
+        # 🇮🇱 Israel
+        "dicta-il": "Israel",
+        "israel": "Israel",
+
+        # 🇪🇺 European Union
+        "utter-project": "European Union",
+        "eu": "European Union",
+        "european union": "European Union",
+        "BSC-LT": "Spain",
+        "bsc-lt": "Spain",
+
+        # 🇫🇷 France
+        "mistral": "France",
+        "huggingface": "France",
+        "lighton": "France",
+        "france": "France",
+
+        # 🇺🇸 United States
+        "allenai": "United States",
+        "openai": "United States",
+        "anthropic": "United States",
+        "meta": "United States",
+        "google": "United States",
+        "deepmind": "United States",
+        "microsoft": "United States",
+        "amazon": "United States",
+        "aws": "United States",
+        "nvidia": "United States",
+        "xai": "United States",
+
+        # 🇨🇳 China
+        "deepseek": "China",
+        "qwen": "China",
+        "alibaba": "China",
+        "baidu": "China",
+        "ernie": "China",
+        "pangu": "China",
+        "huawei": "China",
+        "zhipu": "China",
+        "chatglm": "China",
+        "giga-llm": "China",
+
+        # 🇯🇵 Japan
+        "yamnet": "Japan",
+        "jaist": "Japan",
+        "riken": "Japan",
+        "fugaku": "Japan",
+
+        # 🇰🇷 South Korea
+        "naver": "South Korea",
+        "hyperclova": "South Korea",
+        "kakao": "South Korea",
+        "skt": "South Korea",
+
+        # 🇮🇳 India
+        "sarvam": "India",
+        "ai4bharat": "India",
+        "india": "India",
+
+        # 🇦🇪 United Arab Emirates
+        "falcon": "United Arab Emirates",
+        "tii": "United Arab Emirates",
+        "technology innovation institute": "United Arab Emirates",
+        "mbzuai": "United Arab Emirates",
+
+        # 🇸🇦 Saudi Arabia
+        "allam": "Saudi Arabia",
+        "sdaia": "Saudi Arabia",
+
+        # 🇷🇺 Russia
+        "gigachat": "Russia",
+        "yandex": "Russia",
+        "yalm": "Russia",
+
+        # 🇹🇼 Taiwan
+        "taide": "Taiwan",
+        "narlabs": "Taiwan",
+
+        # 🌍 Multinational / Open
+        "stability": "United Kingdom",  # Stability AI (UK-based)
+        "eleutherai": "United States",
+    }
 
 # Known public / state-backed orgs (often higher sovereignty)
 SOVEREIGNTY_ORGS = {
@@ -32,8 +140,8 @@ CATEGORIES = [
     "Is the model trained locally?",
     "Does the company have full control of the model weights?",
     "Is the model trained on a different model?",
-    "Is the model weights private?",
     "Is there country specific knowledge?",
+    "Is the model weights private?"
 ]
 
 DEFAULT_WEIGHTS = {c: 1.0 / len(CATEGORIES) for c in CATEGORIES}
@@ -80,6 +188,37 @@ ORG_BIG_TECH_HINTS = [
     "nvidia",
 ]
 
+BOILERPLATE_PATTERNS = [
+    r"click here", r"press here", r"learn more", r"read more",
+    r"cookie", r"accept all", r"privacy policy", r"terms of service",
+    r"all rights reserved", r"subscribe", r"sign up",
+]
+
+# Keywords for content relevance when a doc has no `category` field (legacy data).
+# Keys MUST match CATEGORIES entries lowercased (see _category_key).
+CATEGORY_KEYWORDS = {
+    "is the training data private?": [
+        "training data", "dataset", "data", "private", "proprietary", "corpus",
+        "documents", "open data", "sources", "collection",
+    ],
+    "is the model trained locally?": [
+        "train", "training", "local", "on-prem", "infrastructure", "cluster",
+        "region", "data center", "hosted", "compute",
+    ],
+    "does the company have full control of the model weights?": [
+        "weights", "control", "license", "host", "deploy", "download",
+        "open weights", "model weights", "api", "access", "release",
+    ],
+    "is the model trained on a different model?": [
+        "base model", "fine-tun", "fine-tuned", "derived", "pretrain",
+        "pre-trained", "checkpoint", "adapter", "distill", "instruction",
+    ],
+    "is there country specific knowledge?": [
+        "country", "language", "region", "local", "cultur", "multilingual",
+        "national", "domestic"
+    ],
+}
+
 
 def _parse_float(s: str) -> float | None:
     if s is None:
@@ -101,11 +240,18 @@ def _quote_verified_in_sources(quote: str, docs: list[dict], min_overlap: int = 
     """
     Reject likely hallucinated or paraphrased 'quotes' by requiring a long
     substring of the quote to appear verbatim in extracted source text.
+
+    Checks both raw scraped text and the same cleaned slice used in the LLM prompt
+    so verification matches what the model was asked to copy from.
     """
     qn = _normalize_for_quote_match(quote)
     if len(qn) < min_overlap:
         return False
-    blobs = [_normalize_for_quote_match((d.get("extracted") or "")) for d in docs]
+    blobs = []
+    for d in docs:
+        raw = (d.get("extracted") or "")[:8000]
+        blobs.append(_normalize_for_quote_match(raw))
+        blobs.append(_normalize_for_quote_match(_clean_content(raw[:2000])))
     # Sliding windows on quote for fuzzy match if the model trimmed start/end
     for step in (0, min(20, max(0, len(qn) // 4))):
         tail = qn[step:]
@@ -186,6 +332,67 @@ def score_from_huggingface(hf_model: dict) -> dict[str, float]:
 
     return scores
 
+
+
+
+def _is_boilerplate(text: str) -> bool:
+    t = text.lower()
+    return any(re.search(p, t) for p in BOILERPLATE_PATTERNS)
+
+
+def _clean_content(text: str) -> str:
+    lines = text.split("\n")
+    lines = [l.strip() for l in lines if len(l.strip()) > 40]
+    lines = [l for l in lines if not _is_boilerplate(l)]
+    return "\n".join(lines)
+
+
+def _is_relevant_to_category(text: str, category: str) -> bool:
+    keywords = CATEGORY_KEYWORDS.get(category.lower(), [])
+    if not keywords:
+        return True
+    t = text.lower()
+    return any(k in t for k in keywords)
+
+
+def _quote_is_relevant(text: str, category: str) -> bool:
+    keywords = CATEGORY_KEYWORDS.get(category.lower(), [])
+    t = text.lower()
+
+    if not keywords:
+        return True
+    if not any(k in t for k in keywords):
+        return False
+
+    vague_patterns = [
+        r"best-in-class", r"cutting-edge", r"powerful",
+        r"innovative", r"seamless experience",
+    ]
+    if any(re.search(p, t) for p in vague_patterns):
+        return False
+
+    return True
+
+
+def _is_low_information(text: str) -> bool:
+    return len(re.findall(r"\b(is|are|was|were|has|have|can|will)\b", text.lower())) == 0
+
+
+def _score_quote(text: str, category: str) -> int:
+    score = 0
+    t = text.lower()
+
+    keywords = CATEGORY_KEYWORDS.get(category.lower(), [])
+    if keywords:
+        score += sum(1 for k in keywords if k in t)
+
+    if len(text) > 80:
+        score += 1
+    if any(x in t for x in ["must", "only", "stored", "located", "available"]):
+        score += 2
+
+    return score
+
 def score_from_web_docs(
     web_docs: list[dict],
     model_name: str,
@@ -200,12 +407,20 @@ def score_from_web_docs(
 
     results = {}
 
-    for i, category in enumerate(CATEGORIES):
+    for category in CATEGORIES:
+
+        cat_norm = category.strip().lower()
 
         filtered = [
             d for d in web_docs
-            if category.lower() in (d.get("category") or "").lower()
+            if (d.get("category") or "").strip().lower() == cat_norm
         ]
+
+        if not filtered:
+            filtered = [
+                d for d in web_docs
+                if _is_relevant_to_category(d.get("extracted", ""), category)
+            ]
 
         if not filtered:
             results[category] = {
@@ -216,56 +431,39 @@ def score_from_web_docs(
             continue
 
         sources = "\n\n".join(
-            f"Source {j+1}:\nURL: {d.get('url', '')}\nContent:\n{d.get('extracted', '')[:1200]}"
+            f"Source {j+1}:\nURL: {d.get('url', '')}\nContent:\n{_clean_content(d.get('extracted', '')[:2000])}"
             for j, d in enumerate(filtered[:5])
         )
-     
 
         prompt = f"""
-            You are a strict JSON API.
+        You are a strict JSON API.
 
-            Return ONLY valid JSON. No text before or after.
+        Return ONLY valid JSON. No text before or after.
 
-            Schema:
+        Schema:
+        {{
+        "score": number between 0 and 1,
+        "confidence": number between 0 and 1,
+        "quotes": [
             {{
-            "score": number between 0 and 1,
-            "confidence": number between 0 and 1,
-            "quotes": [
-                {{
-                "quote": "verbatim copy-paste from the source Content below",
-                "url": "exact URL of that source (must match a Source block)",
-                "rationale": "one or two sentences: state how this exact wording implies the score you chose for this category (higher = more sovereign for this dimension; say what in the quote pushes the score up or down)"
-                }}
-            ]
+            "quote": "verbatim copy-paste from the source Content below",
+            "url": "exact URL of that source",
+            "rationale": "explain how this quote affects the score"
             }}
+        ]
+        }}
 
-            Rules:
-            - Output MUST be valid JSON
-            - No explanations outside the JSON
-            - No markdown
-            - No trailing commas
+        Rules:
+        - Prefer high-quality, relevant quotes
+        - If strong quotes are unavailable, return the BEST available passage (even if weaker)
+        - Never return empty quotes if any usable text exists
 
-            Quote quality (VERY IMPORTANT):
-            - Copy the "quote" character-for-character from the Content of one Source block (no paraphrase, no invention)
-            - Length: prefer 40–350 characters; never under 25 characters unless the source only has a short sentence
-            - Must be a continuous span from the source (not stitched fragments)
-            - Exclude boilerplate: navigation, cookie banners, "click here", copyright-only lines, social share text
-            - Each quote MUST directly address: "{category}"
-            - Reject vague marketing or generic capability claims unless they explicitly touch this category
-            - If no passage meets these bars, return "quotes": []
+        Sources:
+        {sources}
 
-            Scoring (remember: for these yes/no style questions, higher score = MORE sovereign / local control / openness as defined by the category wording):
-            - Base score and confidence ONLY on the Sources; do not use outside knowledge
-            - "confidence" reflects how clear and on-topic the evidence is (0 = ambiguous or thin, 1 = explicit)
-            - Strong, explicit evidence → higher score and higher confidence
-            - Weak, indirect, or missing evidence → score near 0.5 and low confidence
-
-            Sources:
-            {sources}
-
-            Task:
-            For "{model_name}", score the category "{category}" and return up to 3 best quotes with rationale tied to your score.
-            """
+        Task:
+        Score "{model_name}" for "{category}" and return up to 3 quotes.
+        """
 
         try:
             parsed = None
@@ -274,13 +472,7 @@ def score_from_web_docs(
                     prompt=prompt,
                     user_agent="Sovereignty-Pipeline/1.0",
                 )
-
-                # print("\n=== RAW LLM OUTPUT ===")
-                # print(content)
-                # print("=====================\n")
-
                 parsed = extract_valid_json(content)
-                # print(f"Parsed content: {parsed}")
                 if parsed:
                     break
 
@@ -288,13 +480,15 @@ def score_from_web_docs(
                 raise ValueError("Invalid JSON from LLM after retries")
 
             score = _parse_float(parsed.get("score")) or 0.5
-            confidence = _parse_float(parsed.get("confidence"))
-            if confidence is None:
-                confidence = 0.0
+            confidence = _parse_float(parsed.get("confidence")) or 0.0
             quotes = parsed.get("quotes", []) or []
 
             clean_quotes = []
             seen_norm = set()
+
+            # -------------------------
+            # PASS 1: STRICT FILTER
+            # -------------------------
             for q in quotes:
                 text = (q.get("quote") or "").strip()
                 url = (q.get("url") or "").strip()
@@ -302,59 +496,121 @@ def score_from_web_docs(
 
                 if len(text) < 25:
                     continue
-                if text.lower().startswith("source"):
+                if _is_boilerplate(text):
                     continue
                 if not _quote_verified_in_sources(text, filtered):
                     continue
-                dedupe_key = _normalize_for_quote_match(text)[:240]
-                if dedupe_key in seen_norm:
+                if not _quote_is_relevant(text, category):
                     continue
-                seen_norm.add(dedupe_key)
-                if len(rationale) < 15:
-                    rationale = (
-                        f"This excerpt was used as supporting text for the category "
-                        f"\"{category}\" when estimating the sovereignty-related score."
-                    )
+                if _is_low_information(text):
+                    continue
+
+                key = _normalize_for_quote_match(text)[:240]
+                if key in seen_norm:
+                    continue
+                seen_norm.add(key)
 
                 clean_quotes.append({
                     "quote": text,
                     "url": url,
-                    "rationale": rationale,
+                    "rationale": rationale or f"Relevant to '{category}'"
                 })
 
+            # -------------------------
+            # PASS 2: RELAXED FILTER
+            # -------------------------
             if not clean_quotes:
-                confidence = min(float(confidence), 0.35)
+                for q in quotes:
+                    text = (q.get("quote") or "").strip()
+                    url = (q.get("url") or "").strip()
 
-            # Confidence-weighted score
+                    if len(text) < 40:
+                        continue
+                    if _is_boilerplate(text):
+                        continue
+                    if not _quote_verified_in_sources(text, filtered):
+                        continue
+
+                    clean_quotes.append({
+                        "quote": text,
+                        "url": url,
+                        "rationale": f"Weaker but related evidence for '{category}'"
+                    })
+
+                    break  # only need ONE
+
+            # -------------------------
+            # PASS 3: EXTRACT FROM SOURCE
+            # -------------------------
+            if not clean_quotes:
+                for d in filtered:
+                    content = _clean_content(d.get("extracted", ""))
+                    sentences = re.split(r'(?<=[.!?])\s+', content)
+
+                    # pick best sentence by keyword overlap
+                    ranked = sorted(
+                        sentences,
+                        key=lambda s: _score_quote(s, category),
+                        reverse=True
+                    )
+
+                    for s in ranked:
+                        s = s.strip()
+                        if len(s) > 40 and not _is_boilerplate(s):
+                            clean_quotes.append({
+                                "quote": s,
+                                "url": d.get("url", ""),
+                                "rationale": f"Extracted fallback evidence for '{category}'"
+                            })
+                            break
+
+                    if clean_quotes:
+                        break
+
+            # -------------------------
+            # FINAL SAFETY (GUARANTEED)
+            # -------------------------
+            if not clean_quotes:
+                d = filtered[0]
+                text = (_clean_content(d.get("extracted", "")) or "")[:200]
+
+                clean_quotes.append({
+                    "quote": text.strip() or "No strong evidence found.",
+                    "url": d.get("url", ""),
+                    "rationale": f"Minimal fallback for '{category}'"
+                })
+
+                confidence = min(confidence, 0.2)
+
+            # rank + limit
+            clean_quotes = sorted(
+                clean_quotes,
+                key=lambda q: _score_quote(q["quote"], category),
+                reverse=True
+            )[:3]
+
             final_score = score * (0.5 + 0.5 * confidence)
 
             results[category] = {
                 "score": final_score,
                 "confidence": confidence,
-                "evidence": clean_quotes[:3]
+                "evidence": clean_quotes
             }
 
         except Exception as e:
             print(f"Error message: {e}")
-            # fallback
-            fallback_quotes = []
 
-            for d in filtered[:2]:
-                text = (d.get("extracted") or "")[:200].strip()
-                if text:
-                    fallback_quotes.append({
-                        "quote": text,
-                        "url": d.get("url", ""),
-                        "rationale": (
-                            f"Raw excerpt from web evidence for \"{category}\" "
-                            f"(automated fallback; LLM scoring failed)."
-                        ),
-                    })
+            d = filtered[0]
+            text = (_clean_content(d.get("extracted", "")) or "")[:200]
 
             results[category] = {
                 "score": 0.5,
                 "confidence": 0.0,
-                "evidence": fallback_quotes
+                "evidence": [{
+                    "quote": text.strip() or "Fallback evidence unavailable.",
+                    "url": d.get("url", ""),
+                    "rationale": f"Error fallback for '{category}'"
+                }]
             }
 
     return results
@@ -434,10 +690,8 @@ def compute_sovereignty_score(
                 web_entry = web_scores.get(c, {})
                 web_score = web_entry.get("score", 0.5)
 
-                # ✅ correct blending
                 hf_scores[c] = 0.5 * hf_scores[c] + 0.5 * web_score
 
-                # ✅ keep evidence
                 evidence_map[c] = web_entry.get("evidence", [])
     elif web_docs and model_name:
         # Keyword boost from web docs (no LLM)
@@ -451,161 +705,97 @@ def compute_sovereignty_score(
     overall = round(weighted * 100, 2)
     return overall, hf_scores, evidence_map
 
+
+def _get_hf_org(org: str) -> dict | None:
+    try:
+        url = f"https://huggingface.co/api/organizations/{org}"
+        r = requests.get(url, timeout=5)
+        if r.status_code == 200:
+            return r.json()
+    except Exception:
+        pass
+    return None
+
+def _infer_country_from_url(url: str) -> str | None:
+    if not url:
+        return None
+
+    url = url.lower()
+
+    if ".fr" in url:
+        return "France"
+    if ".uk" in url:
+        return "United Kingdom"
+    if ".ch" in url:
+        return "Switzerland"
+    if ".de" in url:
+        return "Germany"
+    if ".sg" in url:
+        return "Singapore"
+    if ".cn" in url:
+        return "China"
+    if ".jp" in url:
+        return "Japan"
+    if ".in" in url:
+        return "India"
+
+    return None
+
+
 def find_country(hf_model: dict) -> str:
     """
-    Finds which country developed the model (or where the origansiation is based from)
+    Country detection using Hugging Face org API first.
     """
+
+    model_id = (hf_model.get("id") or "").lower()
     author = (hf_model.get("author") or "").lower()
-    card_data = str(hf_model.get("cardData") or "").lower()
-    tags = [t.lower() for t in (hf_model.get("tags") or [])]
 
-    # Keywords mapping (can be extended)
-    COUNTRY_KEYWORDS = {
-        # 🇨🇭 Switzerland
-        "swiss": "Switzerland",
-        "switzerland": "Switzerland",
+    org = None
+    if "/" in model_id:
+        org = model_id.split("/")[0]
+    elif author:
+        org = author
 
-        # 🇸🇪 Sweden
-        "sweden": "Sweden",
-        "ai-sweden": "Sweden",
+    # -------------------------
+    # 🥇 PASS 1: Hugging Face org API
+    # -------------------------
+    if org:
+        org_data = _get_hf_org(org)
 
-        # 🇸🇬 Singapore
-        "aisingapore": "Singapore",
-        "ai singapore": "Singapore",
-        "singapore": "Singapore",
-        "sea-lion": "Singapore",
+        if org_data:
+            text_blob = " ".join([
+                str(org_data.get("name", "")),
+                str(org_data.get("description", "")),
+                str(org_data.get("blog", "")),
+                str(org_data.get("github", "")),
+            ]).lower()
 
-        # 🇬🇧 United Kingdom
-        "uk": "United Kingdom",
-        "united kingdom": "United Kingdom",
-        "britain": "United Kingdom",
-        "ucl": "United Kingdom",
-        "oxford": "United Kingdom",
-        "cambridge": "United Kingdom",
+            # direct keyword scan (higher quality than model card)
+            for kw, country in COUNTRY_KEYWORDS.items():
+                if kw in text_blob:
+                    return country
 
-        # 🇮🇱 Israel
-        "dicta-il": "Israel",
-        "israel": "Israel",
+            # 🌐 infer from blog/github domain
+            for field in ["blog", "github"]:
+                inferred = _infer_country_from_url(org_data.get(field))
+                if inferred:
+                    return inferred
 
-        # 🇪🇺 European Union
-        "utter-project": "European Union",
-        "eu": "European Union",
-        "european union": "European Union",
+    # -------------------------
+    # 🥈 PASS 2: fallback to your existing logic
+    # -------------------------
+    # (reuse your previous keyword-based system)
+    joined = f"{author} {model_id}".lower()
 
-        # 🇫🇷 France
-        "mistral": "France",
-        "huggingface": "France",
-        "lighton": "France",
-        "france": "France",
-
-        # 🇺🇸 United States
-        "allenai": "United States",
-        "openai": "United States",
-        "anthropic": "United States",
-        "meta": "United States",
-        "google": "United States",
-        "deepmind": "United States",
-        "microsoft": "United States",
-        "amazon": "United States",
-        "aws": "United States",
-        "nvidia": "United States",
-        "xai": "United States",
-
-        # 🇨🇳 China
-        "deepseek": "China",
-        "qwen": "China",
-        "alibaba": "China",
-        "baidu": "China",
-        "ernie": "China",
-        "pangu": "China",
-        "huawei": "China",
-        "zhipu": "China",
-        "chatglm": "China",
-        "giga-llm": "China",
-
-        # 🇯🇵 Japan
-        "yamnet": "Japan",
-        "jaist": "Japan",
-        "riken": "Japan",
-        "fugaku": "Japan",
-
-        # 🇰🇷 South Korea
-        "naver": "South Korea",
-        "hyperclova": "South Korea",
-        "kakao": "South Korea",
-        "skt": "South Korea",
-
-        # 🇮🇳 India
-        "sarvam": "India",
-        "ai4bharat": "India",
-        "india": "India",
-
-        # 🇦🇪 United Arab Emirates
-        "falcon": "United Arab Emirates",
-        "tii": "United Arab Emirates",
-        "technology innovation institute": "United Arab Emirates",
-        "mbzuai": "United Arab Emirates",
-
-        # 🇸🇦 Saudi Arabia
-        "allam": "Saudi Arabia",
-        "sdaia": "Saudi Arabia",
-
-        # 🇷🇺 Russia
-        "gigachat": "Russia",
-        "yandex": "Russia",
-        "yalm": "Russia",
-
-        # 🇹🇼 Taiwan
-        "taide": "Taiwan",
-        "narlabs": "Taiwan",
-
-        # 🌍 Multinational / Open
-        "stability": "United Kingdom",  # Stability AI (UK-based)
-        "eleutherai": "United States",
-    }
-
-    # Search heuristics in local metadata first
-    joined = f"{author} {card_data} {' '.join(tags)}".lower()
     for kw, country in COUNTRY_KEYWORDS.items():
         if kw in joined:
             return country
 
-    # Try to infer from author if it's an org name like "swiss-ai"
-    for kw, country in COUNTRY_KEYWORDS.items():
-        if kw in author:
-            return country
-
-    # Fallback to web search if possible
-    try:
-        from duckduckgo_search import DDGS
-    except ImportError:
-        DDGS = None
-
-    if DDGS is not None and author:
-        try:
-            with DDGS() as ddgs:
-                results = list(ddgs.text(author, max_results=10))
-            text_blob = " ".join((r.get("body") or "") + " " + (r.get("title") or "") for r in results).lower()
-            for kw, country in COUNTRY_KEYWORDS.items():
-                if kw in text_blob:
-                    return country
-            # Heuristic scan for known patterns
-            if "switzerland" in text_blob: return "Switzerland"
-            if "sweden" in text_blob: return "Sweden"
-            if "singapore" in text_blob: return "Singapore"
-            if "france" in text_blob: return "France"
-            if "european union" in text_blob or "europe" in text_blob: return "European Union"
-            if "united kingdom" in text_blob or "britain" in text_blob: return "United Kingdom"
-            if "united states" in text_blob or "usa" in text_blob: return "United States"
-            if "china" in text_blob: return "China"
-            if "japan" in text_blob: return "Japan"
-            if "uae" in text_blob or "emirates" in text_blob: return "United Arab Emirates"
-            if "israel" in text_blob: return "Israel"
-        except Exception:
-            pass
-
-    # Default if nothing found
+    # -------------------------
+    # 🥉 FINAL fallback
+    # -------------------------
     return "–"
+
 
 def sort_organisation(hf_model: dict) -> str:
     """
@@ -757,14 +947,15 @@ def explain_sovereignty_score(
     Web evidence (verified excerpts and why each was tied to the category score):
     {evidence_section}
 
-    Write a concise explanation that:
+    Write a explanation that:
 
     1. States WHY this model landed near this overall score (not how the formula works).
-    2. Names the TOP 2–3 categories that most increased the score and the TOP 2–3 that most decreased it, using the numeric values above.
+    2. Explain why each category got its score, using the web quotes to generate the explanation.
     3. Where web quotes exist, you MUST weave them in: for each category you discuss that has quotes, explain in plain language how the quoted wording supports that category's score (higher vs lower). Make the causal link explicit: "this passage suggests X, which raises/lowers sovereignty on [category] because…"
     4. If a category has no quote, infer only from the category score and do not invent citations.
     5. Avoid generic tutorials about weighted averages. Do not repeat the long boilerplate sentence about "evaluating different categories from 0 to 1".
-    
+    6. Avoid hedging and cautious language, and make sentences direct. You are explaining it as you see fit.
+ 
     Write this in paragraph form. Your response will be displayed as a single paragraph, and ny newlines or carrage returns will includes. Similarly any italics and bolding will be ignored, so do NOT include them.
     Be specific and comparative. Prefer short quoted phrases over long pastes.
     """
@@ -881,7 +1072,6 @@ def evaluate_model_for_hf(
 
     This does NOT call any Hugging Face-specific APIs; it just returns data.
     """
-    from pipeline.sources import fetch_huggingface_model, fetch_web_evidence
 
     hf_model = fetch_huggingface_model(model_id)
     # Use last segment as human-readable name for prompts
