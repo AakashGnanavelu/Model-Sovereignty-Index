@@ -27,8 +27,6 @@ For a given model, we compute:
 - `Is the model trained on a different model?`
 - `Is there country specific knowledge?`
 
-> ⚠️ Note: Earlier versions duplicated “Is the model weights private?” — this has been removed and merged into the correct categories.
-
 ---
 
 ## How the score is derived
