@@ -393,11 +393,226 @@ def _score_quote(text: str, category: str) -> int:
 
     return score
 
+# def score_from_web_docs(
+#     web_docs: list[dict],
+#     model_name: str,
+#     weights: dict[str, float] | None = None,
+#     num_of_attempts=2
+# ) -> dict:
+
+#     weights = weights or DEFAULT_WEIGHTS
+
+#     if not os.getenv("PUBLICAI_KEY"):
+#         return None
+
+#     # -------------------------
+#     # GATE: drop docs that don't mention this model at all
+#     # -------------------------
+#     model_name_lower = model_name.lower()
+#     author_tokens = [t for t in re.split(r"[-_/]", model_name_lower) if len(t) > 3]
+
+#     def _doc_mentions_model(doc: dict) -> bool:
+#         text = (doc.get("extracted") or "").lower()
+#         url = (doc.get("url") or "").lower()
+#         return (
+#             model_name_lower in text
+#             or model_name_lower in url
+#             or any(token in text for token in author_tokens)
+#         )
+
+#     web_docs = [d for d in web_docs if _doc_mentions_model(d)]
+
+#     if not web_docs:
+#         return {c: {"score": 0.5, "confidence": 0.0, "evidence": []} for c in CATEGORIES}
+
+#     results = {}
+
+#     for category in CATEGORIES:
+
+#         cat_norm = category.strip().lower()
+
+#         filtered = [
+#             d for d in web_docs
+#             if (d.get("category") or "").strip().lower() == cat_norm
+#         ]
+
+#         if not filtered:
+#             filtered = [
+#                 d for d in web_docs
+#                 if _is_relevant_to_category(d.get("extracted", ""), category)
+#             ]
+
+#         if not filtered:
+#             filtered = web_docs  # last resort: all model-relevant docs
+
+#         sources = "\n\n".join(
+#             f"Source {j+1}:\nURL: {d.get('url', '')}\nContent:\n{_clean_content(d.get('extracted', '')[:2000])}"
+#             for j, d in enumerate(filtered[:5])
+#         )
+
+#         prompt = f"""
+#         You are a strict JSON API.
+
+#         Return ONLY valid JSON. No text before or after.
+
+#         Schema:
+#         {{
+#         "score": number between 0 and 1,
+#         "confidence": number between 0 and 1,
+#         "quotes": [
+#             {{
+#             "quote": "verbatim copy-paste from the source Content below",
+#             "url": "exact URL of that source",
+#             "rationale": "explain how this quote affects the score"
+#             }}
+#         ]
+#         }}
+
+#         Rules:
+#         - Prefer high-quality, relevant quotes
+#         - If strong quotes are unavailable, return the BEST available passage (even if weaker)
+#         - Never return empty quotes if any usable text exists
+
+#         Sources:
+#         {sources}
+
+#         Task:
+#         Score "{model_name}" for "{category}" and return up to 3 quotes.
+#         """
+
+#         try:
+#             parsed = None
+#             for _ in range(num_of_attempts):
+#                 content = ask_publicai(
+#                     prompt=prompt,
+#                     user_agent="Sovereignty-Pipeline/1.0",
+#                 )
+#                 parsed = extract_valid_json(content)
+#                 if parsed:
+#                     break
+
+#             if not parsed:
+#                 raise ValueError("Invalid JSON from LLM after retries")
+
+#             score = _parse_float(parsed.get("score")) or 0.5
+#             confidence = _parse_float(parsed.get("confidence")) or 0.0
+#             quotes = parsed.get("quotes", []) or []
+
+#             clean_quotes = []
+#             seen_norm = set()
+
+#             for q in quotes:
+#                 text = (q.get("quote") or "").strip()
+#                 url = (q.get("url") or "").strip()
+#                 rationale = (q.get("rationale") or "").strip()
+
+#                 if len(text) < 25:
+#                     continue
+#                 if _is_boilerplate(text):
+#                     continue
+#                 if not _quote_verified_in_sources(text, filtered):
+#                     continue
+#                 if not _quote_is_relevant(text, category):
+#                     continue
+#                 if _is_low_information(text):
+#                     continue
+
+#                 key = _normalize_for_quote_match(text)[:240]
+#                 if key in seen_norm:
+#                     continue
+#                 seen_norm.add(key)
+
+#                 clean_quotes.append({
+#                     "quote": text,
+#                     "url": url,
+#                     "rationale": rationale or f"Relevant to '{category}'"
+#                 })
+
+#             if not clean_quotes:
+#                 for q in quotes:
+#                     text = (q.get("quote") or "").strip()
+#                     url = (q.get("url") or "").strip()
+
+#                     if len(text) < 40:
+#                         continue
+#                     if _is_boilerplate(text):
+#                         continue
+#                     if not _quote_verified_in_sources(text, filtered):
+#                         continue
+
+#                     clean_quotes.append({
+#                         "quote": text,
+#                         "url": url,
+#                         "rationale": f"Weaker but related evidence for '{category}'"
+#                     })
+#                     break
+
+#             if not clean_quotes:
+#                 for d in filtered:
+#                     content = _clean_content(d.get("extracted", ""))
+#                     sentences = re.split(r'(?<=[.!?])\s+', content)
+#                     ranked = sorted(
+#                         sentences,
+#                         key=lambda s: _score_quote(s, category),
+#                         reverse=True
+#                     )
+#                     for s in ranked:
+#                         s = s.strip()
+#                         if len(s) > 40 and not _is_boilerplate(s):
+#                             clean_quotes.append({
+#                                 "quote": s,
+#                                 "url": d.get("url", ""),
+#                                 "rationale": f"Extracted fallback evidence for '{category}'"
+#                             })
+#                             break
+#                     if clean_quotes:
+#                         break
+
+#             if not clean_quotes:
+#                 d = filtered[0]
+#                 text = (_clean_content(d.get("extracted", "")) or "")[:200]
+#                 clean_quotes.append({
+#                     "quote": text.strip() or "No strong evidence found.",
+#                     "url": d.get("url", ""),
+#                     "rationale": f"Minimal fallback for '{category}'"
+#                 })
+#                 confidence = min(confidence, 0.2)
+
+#             clean_quotes = sorted(
+#                 clean_quotes,
+#                 key=lambda q: _score_quote(q["quote"], category),
+#                 reverse=True
+#             )[:3]
+
+#             final_score = score * (0.5 + 0.5 * confidence)
+
+#             results[category] = {
+#                 "score": final_score,
+#                 "confidence": confidence,
+#                 "evidence": clean_quotes
+#             }
+
+#         except Exception as e:
+#             print(f"Error scoring '{category}': {e}")
+#             d = filtered[0]
+#             text = (_clean_content(d.get("extracted", "")) or "")[:200]
+#             results[category] = {
+#                 "score": 0.5,
+#                 "confidence": 0.0,
+#                 "evidence": [{
+#                     "quote": text.strip() or "Fallback evidence unavailable.",
+#                     "url": d.get("url", ""),
+#                     "rationale": f"Error fallback for '{category}'"
+#                 }]
+#             }
+
+#     return results
+
 def score_from_web_docs(
     web_docs: list[dict],
     model_name: str,
     weights: dict[str, float] | None = None,
-    num_of_attempts=2
+    num_of_attempts: int = 2
 ) -> dict:
 
     weights = weights or DEFAULT_WEIGHTS
@@ -405,215 +620,183 @@ def score_from_web_docs(
     if not os.getenv("PUBLICAI_KEY"):
         return None
 
+    # Deduplicate by domain, HuggingFace last
+    seen_domains = set()
+    deduped = []
+    for d in web_docs:
+        url = (d.get("url") or "").lower()
+        domain = re.sub(r"https?://", "", url).split("/")[0]
+        if domain not in seen_domains:
+            seen_domains.add(domain)
+            deduped.append(d)
+    non_hf = [d for d in deduped if "huggingface.co" not in (d.get("url") or "")]
+    hf_docs = [d for d in deduped if "huggingface.co" in (d.get("url") or "")]
+    web_docs = non_hf + hf_docs
+
+    if not web_docs:
+        return {c: {"score": 0.5, "confidence": 0.0, "evidence": []} for c in CATEGORIES}
+
     results = {}
 
     for category in CATEGORIES:
 
-        cat_norm = category.strip().lower()
-
+        # Pick docs relevant to this category, fall back to all docs
         filtered = [
             d for d in web_docs
-            if (d.get("category") or "").strip().lower() == cat_norm
-        ]
+            if _is_relevant_to_category(d.get("extracted", ""), category)
+        ] or web_docs
 
-        if not filtered:
-            filtered = [
-                d for d in web_docs
-                if _is_relevant_to_category(d.get("extracted", ""), category)
-            ]
+        # Build source block — give the LLM real content to copy from
+        source_blocks = []
+        for j, d in enumerate(filtered[:4]):
+            raw = (d.get("extracted") or "")
+            # Pull sentences that mention the model — more likely to be useful
+            model_lower = model_name.lower()
+            sentences = re.split(r'(?<=[.!?])\s+', raw)
+            relevant = [s.strip() for s in sentences if model_lower in s.lower() and len(s.strip()) > 40]
+            # Use relevant sentences first, then fall back to first 1500 chars
+            snippet = " ".join(relevant[:8]) if relevant else raw[:1500]
+            source_blocks.append(f"Source {j+1}:\nURL: {d.get('url','')}\nContent:\n{snippet}")
 
-        if not filtered:
-            results[category] = {
-                "score": 0.5,
-                "confidence": 0.0,
-                "evidence": []
-            }
-            continue
+        sources = "\n\n".join(source_blocks)
 
-        sources = "\n\n".join(
-            f"Source {j+1}:\nURL: {d.get('url', '')}\nContent:\n{_clean_content(d.get('extracted', '')[:2000])}"
-            for j, d in enumerate(filtered[:5])
-        )
+        prompt = f"""You are extracting evidence from web sources about an AI model.
 
-        prompt = f"""
-        You are a strict JSON API.
+Return ONLY a JSON object. No other text.
 
-        Return ONLY valid JSON. No text before or after.
+Sources:
+{sources}
 
-        Schema:
-        {{
-        "score": number between 0 and 1,
-        "confidence": number between 0 and 1,
-        "quotes": [
-            {{
-            "quote": "verbatim copy-paste from the source Content below",
-            "url": "exact URL of that source",
-            "rationale": "explain how this quote affects the score"
-            }}
-        ]
-        }}
+Task: Score the model "{model_name}" on this question: "{category}"
 
-        Rules:
-        - Prefer high-quality, relevant quotes
-        - If strong quotes are unavailable, return the BEST available passage (even if weaker)
-        - Never return empty quotes if any usable text exists
+Instructions:
+- Read the sources above carefully
+- Find a sentence or passage that is directly relevant to the question
+- Copy it EXACTLY as it appears - do not rephrase or summarise
+- The quote must be a real substring from the sources above
 
-        Sources:
-        {sources}
+Return this exact JSON structure:
+{{
+  "score": <number 0.0 to 1.0>,
+  "confidence": <number 0.0 to 1.0>,
+  "quote": "<exact text copied from one of the sources above>",
+  "url": "<url of the source you copied from>",
+  "rationale": "<one sentence explaining how this quote answers the question>"
+}}
 
-        Task:
-        Score "{model_name}" for "{category}" and return up to 3 quotes.
-        """
+If no relevant text exists, set quote to empty string and confidence to 0.
+"""
 
         try:
             parsed = None
             for _ in range(num_of_attempts):
-                content = ask_publicai(
+                raw_response = ask_publicai(
                     prompt=prompt,
                     user_agent="Sovereignty-Pipeline/1.0",
                 )
-                parsed = extract_valid_json(content)
+                parsed = extract_valid_json(raw_response)
                 if parsed:
                     break
 
             if not parsed:
-                raise ValueError("Invalid JSON from LLM after retries")
+                raise ValueError("No valid JSON returned")
 
             score = _parse_float(parsed.get("score")) or 0.5
             confidence = _parse_float(parsed.get("confidence")) or 0.0
-            quotes = parsed.get("quotes", []) or []
+            quote_text = (parsed.get("quote") or "").strip()
+            quote_url = (parsed.get("url") or "").strip()
+            rationale = (parsed.get("rationale") or "").strip()
 
-            clean_quotes = []
-            seen_norm = set()
+            evidence = []
 
-            # -------------------------
-            # PASS 1: STRICT FILTER
-            # -------------------------
-            for q in quotes:
-                text = (q.get("quote") or "").strip()
-                url = (q.get("url") or "").strip()
-                rationale = (q.get("rationale") or "").strip()
-
-                if len(text) < 25:
-                    continue
-                if _is_boilerplate(text):
-                    continue
-                if not _quote_verified_in_sources(text, filtered):
-                    continue
-                if not _quote_is_relevant(text, category):
-                    continue
-                if _is_low_information(text):
-                    continue
-
-                key = _normalize_for_quote_match(text)[:240]
-                if key in seen_norm:
-                    continue
-                seen_norm.add(key)
-
-                clean_quotes.append({
-                    "quote": text,
-                    "url": url,
-                    "rationale": rationale or f"Relevant to '{category}'"
-                })
-
-            # -------------------------
-            # PASS 2: RELAXED FILTER
-            # -------------------------
-            if not clean_quotes:
-                for q in quotes:
-                    text = (q.get("quote") or "").strip()
-                    url = (q.get("url") or "").strip()
-
-                    if len(text) < 40:
-                        continue
-                    if _is_boilerplate(text):
-                        continue
-                    if not _quote_verified_in_sources(text, filtered):
-                        continue
-
-                    clean_quotes.append({
-                        "quote": text,
-                        "url": url,
-                        "rationale": f"Weaker but related evidence for '{category}'"
-                    })
-
-                    break  # only need ONE
-
-            # -------------------------
-            # PASS 3: EXTRACT FROM SOURCE
-            # -------------------------
-            if not clean_quotes:
+            # Verify the quote is actually in the sources
+            if quote_text and len(quote_text) > 20:
+                qn = _normalize_for_quote_match(quote_text)
+                verified = False
                 for d in filtered:
-                    content = _clean_content(d.get("extracted", ""))
-                    sentences = re.split(r'(?<=[.!?])\s+', content)
-
-                    # pick best sentence by keyword overlap
-                    ranked = sorted(
-                        sentences,
-                        key=lambda s: _score_quote(s, category),
-                        reverse=True
-                    )
-
-                    for s in ranked:
-                        s = s.strip()
-                        if len(s) > 40 and not _is_boilerplate(s):
-                            clean_quotes.append({
-                                "quote": s,
-                                "url": d.get("url", ""),
-                                "rationale": f"Extracted fallback evidence for '{category}'"
-                            })
-                            break
-
-                    if clean_quotes:
+                    blob = _normalize_for_quote_match((d.get("extracted") or "")[:8000])
+                    # Check for a 20-char window match — permissive but real
+                    window = qn[:20]
+                    if window and window in blob:
+                        verified = True
+                        # Use the URL from the matching doc if LLM guessed wrong
+                        if not quote_url or quote_url not in (d.get("url") or ""):
+                            quote_url = d.get("url", quote_url)
                         break
 
-            # -------------------------
-            # FINAL SAFETY (GUARANTEED)
-            # -------------------------
-            if not clean_quotes:
-                d = filtered[0]
-                text = (_clean_content(d.get("extracted", "")) or "")[:200]
+                if verified:
+                    evidence.append({
+                        "quote": quote_text,
+                        "url": quote_url,
+                        "rationale": rationale or f"Evidence for: {category}"
+                    })
 
-                clean_quotes.append({
-                    "quote": text.strip() or "No strong evidence found.",
-                    "url": d.get("url", ""),
-                    "rationale": f"Minimal fallback for '{category}'"
-                })
-
-                confidence = min(confidence, 0.2)
-
-            # rank + limit
-            clean_quotes = sorted(
-                clean_quotes,
-                key=lambda q: _score_quote(q["quote"], category),
-                reverse=True
-            )[:3]
-
-            final_score = score * (0.5 + 0.5 * confidence)
+            # If verification failed, extract the best sentence directly
+            if not evidence:
+                best = _pick_best_sentence(filtered, category, model_name)
+                if best:
+                    evidence.append(best)
 
             results[category] = {
-                "score": final_score,
+                "score": score,
                 "confidence": confidence,
-                "evidence": clean_quotes
+                "evidence": evidence
             }
 
         except Exception as e:
-            print(f"Error message: {e}")
-
-            d = filtered[0]
-            text = (_clean_content(d.get("extracted", "")) or "")[:200]
-
+            print(f"  [WARN] {category}: {e}")
+            best = _pick_best_sentence(filtered, category, model_name)
             results[category] = {
                 "score": 0.5,
                 "confidence": 0.0,
-                "evidence": [{
-                    "quote": text.strip() or "Fallback evidence unavailable.",
-                    "url": d.get("url", ""),
-                    "rationale": f"Error fallback for '{category}'"
-                }]
+                "evidence": [best] if best else []
             }
 
     return results
+
+
+def _pick_best_sentence(docs: list[dict], category: str, model_name: str) -> dict | None:
+    """
+    Directly extract the best sentence from source text.
+    No LLM, no complex validation — just find a real sentence and return it.
+    """
+    model_lower = model_name.lower()
+    candidates = []
+
+    for d in docs:
+        raw = (d.get("extracted") or "")
+        url = d.get("url", "")
+        sentences = re.split(r'(?<=[.!?])\s+', raw)
+
+        for s in sentences:
+            s = s.strip()
+            if len(s) < 40 or len(s) > 500:
+                continue
+            if _is_boilerplate(s):
+                continue
+
+            score = _score_quote(s, category)
+            if model_lower in s.lower():
+                score += 3  # strong bonus for mentioning the model by name
+
+            if score > 0:
+                candidates.append((score, s, url))
+
+    if not candidates:
+        # Last resort: just take the longest non-boilerplate sentence
+        for d in docs:
+            raw = (d.get("extracted") or "")
+            url = d.get("url", "")
+            sentences = re.split(r'(?<=[.!?])\s+', raw)
+            for s in sentences:
+                s = s.strip()
+                if len(s) > 60 and not _is_boilerplate(s):
+                    return {"quote": s, "url": url, "rationale": f"Best available text for: {category}"}
+        return None
+
+    candidates.sort(key=lambda x: x[0], reverse=True)
+    _, text, url = candidates[0]
+    return {"quote": text, "url": url, "rationale": f"Best available evidence for: {category}"}
 
 def extract_valid_json(text: str) -> Optional[Any]:
     """
@@ -1055,43 +1238,51 @@ def score_organisation_from_metadata(hf_model: dict) -> tuple[float, dict[str, f
     )
     return overall, scores
 
-
 def evaluate_model_for_hf(
     model_id: str,
     use_web: bool = False,
     use_llm_web: bool = False,
 ) -> dict:
-    """
-    Convenience helper for publishing a Hugging Face evaluation result.
-
-    Given a Hugging Face model ID (e.g. 'swiss-ai/Apertus-70B-2509'), this:
-    - fetches model metadata from the Hub
-    - optionally collects web evidence (if use_web=True and optional deps installed)
-    - optionally uses an LLM over the web docs (if use_llm_web=True and PUBLICAI_KEY is set)
-    - returns a JSON-serialisable dict you can paste into a model card.
-
-    This does NOT call any Hugging Face-specific APIs; it just returns data.
-    """
 
     hf_model = fetch_huggingface_model(model_id)
-    # Use last segment as human-readable name for prompts
     model_name = model_id.split("/")[-1]
-    # HF metadata can be missing if the model id is invalid; be defensive.
-    author = ((hf_model or {}).get("author") or "").lower()
+    author = ((hf_model or {}).get("author") or model_id.split("/")[0])
+    author_lower = author.lower()
 
-    # Defaults if we can't infer org/country from HF metadata.
     org_type = "Independent"
     country = "–"
-
     web_docs = []
+
     if use_web:
-        # Best-effort; if optional deps are missing, this will just return [].
-        web_docs = fetch_web_evidence(model_name, top_k_per_query=3, delay_between_requests=1.0, verbose=False)
+        search_term = f"{author} {model_name}"
+        web_docs = fetch_web_evidence(
+            search_term, top_k_per_query=3, delay_between_requests=1.0, verbose=False
+        )
+        # Deduplicate by domain
+    # sources = sorted({d.get("url") for d in (web_docs or []) if d.get("url")})
+    if use_web:
+        search_term = f"{author} {model_name}"
+        web_docs = fetch_web_evidence(
+            search_term, top_k_per_query=3, delay_between_requests=1.0, verbose=False
+        )
+        # Deduplicate by domain
+        seen_domains = set()
+        deduped = []
+        for d in web_docs:
+            url = (d.get("url") or "").lower()
+            domain = re.sub(r"https?://", "", url).split("/")[0]
+            if domain not in seen_domains:
+                seen_domains.add(domain)
+                deduped.append(d)
+        sources = deduped
+
+        print(f"[DEBUG] {len(web_docs)} unique-domain docs:")
+        for d in web_docs:
+            print(f"  {d.get('url')}")
+
         if hf_model:
             org_type = sort_organisation(hf_model)
             country = find_country(hf_model)
-
-    sources = sorted({d.get("url") for d in (web_docs or []) if d.get("url")})
 
     overall, categories, evidence = compute_sovereignty_score(
         hf_model,
@@ -1099,10 +1290,11 @@ def evaluate_model_for_hf(
         model_name=model_name,
         use_llm_web=use_llm_web,
     )
+
     if use_web:
         return {
             "model_id": model_id,
-            "author": author,
+            "author": author_lower,
             "metric_name": "sovereignty_score",
             "metric_type": "custom",
             "value": overall,
@@ -1116,13 +1308,13 @@ def evaluate_model_for_hf(
                 "version": "0.1.0",
                 "uses_web": bool(web_docs),
                 "requested_use_web": use_web,
-                "uses_llm_web": bool(use_llm_web),
+                "uses_llm_web": use_llm_web,
             },
         }
     else:
         return {
             "model_id": model_id,
-            "author": author,
+            "author": author_lower,
             "metric_name": "sovereignty_score",
             "metric_type": "custom",
             "organisation_type": org_type,
@@ -1135,8 +1327,8 @@ def evaluate_model_for_hf(
                 "version": "0.1.0",
                 "uses_web": bool(web_docs),
                 "requested_use_web": use_web,
-                "uses_llm_web": bool(use_llm_web),
-            }, 
+                "uses_llm_web": use_llm_web,
+            },
         }
 
 def compare_with_neighbors(target_model_id: str, all_models: list[dict], k: int = 3):

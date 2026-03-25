@@ -7,7 +7,7 @@ USE_WEB = True
 USE_LLM_WEB = True
 
 MODELS = [
-    "AI-Sweden-Models/gpt-sw3-20b-instruct",
+    # "AI-Sweden-Models/gpt-sw3-20b-instruct",
     "swiss-ai/Apertus-8B-Instruct-2509",
     "aisingapore/Apertus-SEA-LION-v4-8B-IT-GGUF",
     "BSC-LT/salamandra-7b-instruct",

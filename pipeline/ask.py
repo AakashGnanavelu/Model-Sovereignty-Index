@@ -2,8 +2,7 @@ import os
 import time
 import requests
 
-MODEL = "swiss-ai/apertus-8b-instruct"
-
+MODEL = "swiss-ai/apertus-70b-instruct"
 
 def ask_publicai(
     payload=None,
