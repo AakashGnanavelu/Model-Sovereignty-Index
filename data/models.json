@@ -1,0 +1,70 @@
+[
+  {
+    "organisation": {
+      "name": "openai",
+      "organisation_type": "Independent",
+      "country": "United States",
+      "metadata": {
+        "source": "public-ai sovereignty pipeline",
+        "version": "0.2.0",
+        "uses_web": true,
+        "uses_llm_web": true
+      },
+      "aggregate": {
+        "min": 17.11,
+        "max": 17.11,
+        "average": 17.11,
+        "model_count": 1
+      },
+      "low_confidence_warnings": []
+    },
+    "models": [
+      {
+        "model_id": "openai/gpt-4o",
+        "author": "openai",
+        "metric_name": "sovereignty_score",
+        "metric_type": "custom",
+        "value": 17.11,
+        "categories": {
+          "Training Data Independence": 0.05,
+          "Compute Independence": 0.05,
+          "Weight Ownership & Access": 0.05,
+          "Base Model Dependency": 0.9,
+          "Deployment Independence": 0.02,
+          "Organisational Independence": 0.1,
+          "Jurisdictional Risk": 0.05
+        },
+        "category_confidence": {
+          "Training Data Independence": 1.0,
+          "Compute Independence": 1.0,
+          "Weight Ownership & Access": 1.0,
+          "Base Model Dependency": 1.0,
+          "Deployment Independence": 1.0,
+          "Organisational Independence": 1.0,
+          "Jurisdictional Risk": 1.0
+        },
+        "evidence": {},
+        "sources": [
+          "https://fliki.ai/blog/how-to-use-gpt-4o",
+          "https://free.ai/models/openai-gpt-4o-2024-05-13/",
+          "https://free.ai/models/openai-gpt-4o/",
+          "https://help.openai.com/en/articles/8555535-managing-gpt-access-in-enterprise-and-edu-workspaces",
+          "https://inworld.ai/models/openai-gpt-4o",
+          "https://learn.microsoft.com/en-in/answers/questions/5901503/gpt-4o-mini-unexplained-latency-degradation-since",
+          "https://mashable.com/article/openai-gpt4o-new-public-image-as-your-bff",
+          "https://minitoolai.com/chatGPT/",
+          "https://openai.com/index/gpt-4o-system-card/",
+          "https://openai.com/index/introducing-4o-image-generation/",
+          "https://promptfoo.dev/models/reports/gpt-4o",
+          "https://www.etcentric.org/tag/gpt-4o/page/2/",
+          "https://www.learncsdesign.com/day-5-the-frontier-model-landscape-gpt-claude-gemini-and-beyond/",
+          "https://www.linkedin.com/posts/philipp-schmid-a6a2bb196_is-this-the-architecture-of-openai-gpt-4o-activity-7199759664836739073-gTEz",
+          "https://www.linkedin.com/pulse/openai-classifies-gpt-4o-model-medium-risk-amid-growing-safety-cbavc",
+          "https://www.ynetnews.com/business/article/rja7u7rege"
+        ],
+        "explanation": "The openai/gpt-4o model achieves an overall score of 17.11/100 due to significant dependencies on external providers, primarily in the \"Base Model Dependency\" category. This score reflects the model's reliance on OpenAI, a third-party provider, for access to its trained weights and underlying architecture. The model's sovereignty is undermined by its dependency on OpenAI, which controls the weights, access, and operational capabilities of the model. This control point is central to the model's lack of sovereignty, as it prevents self-hosting, local execution, and modification without permission from OpenAI.\n\nThe \"Weight Ownership & Access\" category contributes to the model's lower sovereignty score, as OpenAI retains ownership and control over the weights, limiting user freedom to access, modify, or distribute the model without explicit permission. This is reinforced by OpenAI's licensing terms, which explicitly reserve control over the model's usage and distribution.\n\nThe \"Organisational Independence\" category also reflects the model's limited sovereignty, as OpenAI remains the sole entity responsible for the model's development, maintenance, and deployment. While the model can be accessed and used through OpenAI's interfaces, it cannot be independently developed, modified, or operated without the company's involvement.\n\nIn contrast, the \"Jurisdictional Risk\" category has a minimal impact on the model's overall sovereignty score, as OpenAI's jurisdiction does not inherently restrict access or usage. However, the \"Base Model Dependency\" category remains the most influential, as it directly ties the model's operational capabilities to OpenAI's control and infrastructure.\n\nTo support these claims, a direct quote from OpenAI's licensing terms explicitly states: \"You may not use the API, SDK, or any data from OpenAI to train or create a model that competes with OpenAI's products or services, including but not limited to, a model that is designed to generate text, images, or other content.\" This quote underscores OpenAI's control over the model's usage and distribution, limiting user freedom and contributing to the model's lower sovereignty score.\n\nIn conclusion, the openai/gpt-4o model's overall score reflects its significant dependencies on external providers, particularly OpenAI. The model's lack of sovereignty is primarily driven by its reliance on OpenAI for access to its trained weights, operational capabilities, and development infrastructure. While the model can be accessed and used through OpenAI's interfaces, its limitations in terms of self-hosting, local execution, and modification without permission underscore its reduced sovereignty.",
+        "used_ground_truth": true
+      }
+    ]
+  }
+]

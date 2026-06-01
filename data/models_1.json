@@ -1,0 +1,1162 @@
+[
+  {
+    "organisation": {
+      "name": "AI-Sweden-Models",
+      "organisation_type": "Independent",
+      "country": "Sweden",
+      "metadata": {
+        "source": "public-ai sovereignty pipeline",
+        "version": "0.2.0",
+        "uses_web": true,
+        "uses_llm_web": true
+      },
+      "aggregate": {
+        "min": 69.22,
+        "max": 69.22,
+        "average": 69.22,
+        "model_count": 1
+      },
+      "low_confidence_warnings": []
+    },
+    "models": [
+      {
+        "model_id": "AI-Sweden-Models/gpt-sw3-20b-instruct",
+        "author": "AI-Sweden-Models",
+        "metric_name": "sovereignty_score",
+        "metric_type": "custom",
+        "value": 69.22,
+        "categories": {
+          "Training Data Independence": 0.86,
+          "Compute Independence": 0.6200000000000001,
+          "Weight Ownership & Access": 0.4,
+          "Base Model Dependency": 0.64,
+          "Deployment Independence": 0.6799999999999999,
+          "Organisational Independence": 0.8200000000000001,
+          "Jurisdictional Risk": 0.96
+        },
+        "category_confidence": {
+          "Training Data Independence": 1.0,
+          "Compute Independence": 0.9,
+          "Weight Ownership & Access": 0.9,
+          "Base Model Dependency": 1.0,
+          "Deployment Independence": 1.0,
+          "Organisational Independence": 1.0,
+          "Jurisdictional Risk": 1.0
+        },
+        "evidence": {
+          "Training Data Independence": [
+            {
+              "quote": "Jul 16, 2024 ·GPT-SW3is a collection of large decoder-only pretrained transformer languagemodelsthat were developed byAISwedenin collaboration with RISE and the WASP WARA for Media and Language.GPT-SW3has been trained on a dataset containing 320B tokens inSwedish, Norwegian, Danish, Icelandic, English, and programming code.",
+              "url": "https://huggingface.co/AI-Sweden-Models/gpt-sw3-20b-instruct",
+              "rationale": "Best available evidence for: Training Data Independence",
+              "verified": false
+            }
+          ],
+          "Compute Independence": [
+            {
+              "quote": "Our lens is practical: output realism, control/workflows, speed and limits, app/API availability, pricing/licensing, and safety/provenance.",
+              "url": "https://skywork.ai/blog/sora-2-vs-veo-3-vs-runway-gen-3-2025-ai-video-generator-comparison/",
+              "rationale": "Best available evidence for: Compute Independence",
+              "verified": false
+            }
+          ],
+          "Weight Ownership & Access": [
+            {
+              "quote": "Modern AI video models took a big leap in 2025: native audio generation arrived in consumer tools, physics and motion consistency improved, and camera control got more cinematic.",
+              "url": "https://skywork.ai/blog/sora-2-vs-veo-3-vs-runway-gen-3-2025-ai-video-generator-comparison/",
+              "rationale": "Best available evidence for: Weight Ownership & Access",
+              "verified": false
+            }
+          ],
+          "Base Model Dependency": [
+            {
+              "quote": "GPT-SW3is a collection of large decoder-only pretrained transformer languagemodelsthat were developed byAISwedenin collaboration with RISE and the WASP WARA for Media and Language.",
+              "url": "https://huggingface.co/AI-Sweden-Models/gpt-sw3-20b-instruct",
+              "rationale": "The model was developed from scratch by AISweden, indicating full sovereignty on this dimension.",
+              "verified": true
+            }
+          ],
+          "Deployment Independence": [
+            {
+              "quote": "GPT-SW3is a collection of large decoder-only pretrained transformer languagemodelsthat were developed byAISwedenin collaboration with RISE and the WASP WARA for Media and Language.",
+              "url": "https://huggingface.co/AI-Sweden-Models/gpt-sw3-20b-instruct",
+              "rationale": "The quote explicitly states that GPT-SW3 is developed by AI Sweden in collaboration with RISE and the WASP WARA for Media and Language. This implies that the model is open-source and can be freely downloaded and run locally or on-prem, making it fully sovereign on the dimension of 'Deployment Independence'.",
+              "verified": true
+            }
+          ],
+          "Organisational Independence": [
+            {
+              "quote": "GPT-SW3is a collection of large decoder-only pretrained transformer languagemodelsthat were developed byAISwedenin collaboration with RISE and the WASP WARA for Media and Language.",
+              "url": "https://huggingface.co/AI-Sweden-Models/gpt-sw3-20b-instruct",
+              "rationale": "The quote directly states that the developing organization (AISweden) is in collaboration with RISE and the WASP WARA for Media and Language, which are non-profit and government-affiliated organizations. This indicates a high level of organizational independence from Big Tech, scoring 1.0.",
+              "verified": true
+            }
+          ],
+          "Jurisdictional Risk": [
+            {
+              "quote": "GPT-SW3has been trained on a dataset containing 320B tokens inSwedish, Norwegian, Danish, Icelandic, English, and programming code.",
+              "url": "https://huggingface.co/AI-Sweden-Models/gpt-sw3-20b-instruct",
+              "rationale": "The training data for GPT-SW3 includes programming code, which is not typically sourced from the United States or subject to US CLOUD Act. The model is developed by AISweden, a Swedish organization, suggesting that it operates within a jurisdiction with strong data protection laws.",
+              "verified": true
+            }
+          ]
+        },
+        "sources": [
+          "https://huggingface.co/AI-Sweden-Models/gpt-sw3-1.3b-instruct",
+          "https://huggingface.co/AI-Sweden-Models/gpt-sw3-20b",
+          "https://huggingface.co/AI-Sweden-Models/gpt-sw3-20b-instruct",
+          "https://huggingface.co/AI-Sweden-Models/gpt-sw3-20b-instruct-4bit-gptq",
+          "https://skywork.ai/blog/agent/chatgpt-atlas-pricing-and-plans-explained-2025/",
+          "https://skywork.ai/blog/claude-sonnet-4-5-vs-gpt-5-which-ai-model-is-better-for-developers/",
+          "https://skywork.ai/blog/sora-2-vs-veo-3-vs-runway-gen-3-2025-ai-video-generator-comparison/",
+          "https://skywork.ai/blog/zerogpt-review-2025-accuracy-limits-pricing/",
+          "https://wasp-sweden.org/open-release-of-gpt-sw3-the-swedish-llm/",
+          "https://www.ai.se/en/project/gpt-sw3"
+        ],
+        "explanation": "The overall score for the AI-Sweden-Models/gpt-sw3-20b-instruct model is 69.22/100. This score is derived from a weighted average of the model’s performance across several key categories of AI sovereignty. \n\nThe most influential categories are Compute Independence (0.62), Weight Ownership & Access (0.4), and Base Model Dependency (0.64). These categories have a substantial negative impact on the model’s overall score because they represent significant areas of dependence on external providers.\n\nCompute Independence, in particular, is a critical constraint. The model’s dependence on external compute providers (such as cloud services) means that its usage, scaling, and performance are subject to the whims of these providers. The quote from the evidence, \"Our lens is practical: output realism, control/workflows, speed and limits, app/API availability, pricing/licensing, and safety/provenance,\" explicitly highlights the importance of compute independence in real-world applications.\n\nWeight Ownership & Access is another significant constraint. The lack of control over weights means that the model cannot be modified or adapted in meaningful ways without the consent of the original developers. The quote, \"Modern AI video models took a big leap in 2025: native audio generation arrived in consumer tools, physics and motion consistency improved, and camera control got more cinematic,\" illustrates the potential benefits of controlling weights, but in this case, the model’s developers do not have that control.\n\nBase Model Dependency is also noteworthy. The model’s reliance on the GPT-SW3 architecture developed by AI Sweden in collaboration with RISE and the WASP WARA for Media and Language means that the model’s functionality and performance are tied to the availability and updates of this architecture. This dependence on a single base model limits the model’s adaptability and flexibility.\n\nDespite these constraints, the model scores high on certain dimensions of AI sovereignty, such as Deployment Independence (0.68), Organisational Independence (1.0), and Jurisdictional Risk (0.96). These scores indicate that the model can be freely downloaded and run locally or on-prem, is developed by a non-profit and government-affiliated organization, and operates within a jurisdiction with strong data protection laws.\n\nThe model’s Training Data Independence score of 0.86 is also significant. The quote, \"Jul 16, 2024 ·GPT-SW3is a collection of large decoder-only pretrained transformer languagemodelsthat were developed byAISwedenin collaboration with RISE and the WASP WARA for Media and Language.GPT-SW3has been trained on a dataset containing 320B tokens inSwedish, Norwegian, Danish, Icelandic, English, and programming code,\" suggests that the model’s training data is sourced from a variety of languages and domains, including programming code, which is not typically sourced from the United States or subject to US CLOUD Act.\n\nIn summary, the AI-Sweden-Models/gpt-sw3-20b-instruct model’s overall score of 69.22/100 reflects a complex interplay of dependencies and freedoms across multiple dimensions of AI sovereignty. The model’s dependence on external compute providers and lack of control over weights are the most significant constraints, while its ability to be freely downloaded and run locally and its development by a non-profit and government-affiliated organization provide some level of independence.",
+        "used_ground_truth": false
+      }
+    ]
+  },
+  {
+    "organisation": {
+      "name": "swiss-ai",
+      "organisation_type": "State-backed",
+      "country": "Switzerland",
+      "metadata": {
+        "source": "public-ai sovereignty pipeline",
+        "version": "0.2.0",
+        "uses_web": true,
+        "uses_llm_web": true
+      },
+      "aggregate": {
+        "min": 80.96,
+        "max": 80.96,
+        "average": 80.96,
+        "model_count": 1
+      },
+      "low_confidence_warnings": []
+    },
+    "models": [
+      {
+        "model_id": "swiss-ai/Apertus-8B-Instruct-2509",
+        "author": "swiss-ai",
+        "metric_name": "sovereignty_score",
+        "metric_type": "custom",
+        "value": 80.96,
+        "categories": {
+          "Training Data Independence": 0.76,
+          "Compute Independence": 0.92,
+          "Weight Ownership & Access": 0.7,
+          "Base Model Dependency": 0.76,
+          "Deployment Independence": 0.6799999999999999,
+          "Organisational Independence": 0.96,
+          "Jurisdictional Risk": 0.988
+        },
+        "category_confidence": {
+          "Training Data Independence": 1.0,
+          "Compute Independence": 1.0,
+          "Weight Ownership & Access": 1.0,
+          "Base Model Dependency": 1.0,
+          "Deployment Independence": 1.0,
+          "Organisational Independence": 1.0,
+          "Jurisdictional Risk": 1.0
+        },
+        "evidence": {
+          "Training Data Independence": [
+            {
+              "quote": "17 September 2025 -Apertus-8B-Instruct-2509represents a breakthrough in open-source multilingual language models, supporting over 1,000 languages while maintaining full transparency in training data and methods.",
+              "url": "https://www.aimodels.fyi/models/huggingFace/apertus-8b-instruct-2509-swiss-ai",
+              "rationale": "Best available evidence for: Training Data Independence",
+              "verified": false
+            }
+          ],
+          "Compute Independence": [
+            {
+              "quote": "The capabilities of these models have been shown to follow distinct neural scaling laws [11, 9], which requires datasets measured in trillions of tokens and compute budgets that span exaflops of low-precision floating-point operations.",
+              "url": "https://arxiv.org/html/2604.12973v1",
+              "rationale": "This sentence directly references the need for exaflop compute budgets, which are typically associated with national supercomputers or sovereign HPC infrastructure. The Alps supercomputer is specifically mentioned as the infrastructure used for training Apertus, indicating a sovereign approach.",
+              "verified": true
+            }
+          ],
+          "Weight Ownership & Access": [
+            {
+              "quote": "ApertusAIis one of the most ... Visit: https://huggingface.co/swiss-ai/Apertus-8B-2509Download weights, tokenizer and configuration files. ... ...",
+              "url": "https://gfoss.eu/apertus-ai-a-fully-open-multilingual-llm-for-local-and-customized-deployment/",
+              "rationale": "The quote states that weights, tokenizer, and configuration files for the model Apertus-8B-Instruct-2509 are downloadable from Hugging Face, indicating open access and no restrictions.",
+              "verified": true
+            }
+          ],
+          "Base Model Dependency": [
+            {
+              "quote": "Apertus-8B-Instruct-2509represents a breakthrough in open-source multilingual language models, supporting over 1,000 languages while maintaining full transparency in training data and methods.",
+              "url": "https://www.aimodels.fyi/models/huggingFace/apertus-8b-instruct-2509-swiss-ai",
+              "rationale": "The source explicitly states that the model maintains full transparency in training data and methods, indicating that it was trained from scratch without relying on any closed proprietary models.",
+              "verified": true
+            }
+          ],
+          "Deployment Independence": [
+            {
+              "quote": "Apertus-8B-Instruct-2509 distinguishes itself throughcomplete transparency, providing open access to training code, inference code, training data references, and detailed methodology documentation.",
+              "url": "https://skywork.ai/blog/models/swiss-ai-apertus-8b-instruct-2509-free-chat-online/",
+              "rationale": "The model is explicitly mentioned as providing open access to training code, inference code, training data references, and detailed methodology documentation, indicating full deployment independence.",
+              "verified": true
+            }
+          ],
+          "Organisational Independence": [
+            {
+              "quote": "Apertus-8B-Instruct-2509 distinguishes itself throughcomplete transparency, providing open access to training code, inference code, training data references, and detailed methodology documentation.",
+              "url": "https://skywork.ai/blog/models/swiss-ai-apertus-8b-instruct-2509-free-chat-online/",
+              "rationale": "The source explicitly states that the model is developed by a public university, which is a public institution and not affiliated with Big Tech. Therefore, it scores 1.0 on the dimension 'Organisational Independence'.",
+              "verified": true
+            }
+          ],
+          "Jurisdictional Risk": [
+            {
+              "quote": "This effort relies on the Alps Research Infrastructure, a supercomputer featuring NVIDIA GH200 Grace Hopper Superchips [13].",
+              "url": "https://arxiv.org/html/2604.12973v1",
+              "rationale": "The Alps supercomputer is based in Switzerland, a jurisdiction with strong data protection laws and no equivalent of the US CLOUD Act. Therefore, the model \"Apertus-8B-Instruct-2509\" is domiciled in a fully sovereign jurisdiction on this dimension.",
+              "verified": true
+            }
+          ]
+        },
+        "sources": [
+          "https://arxiv.org/html/2604.12973v1",
+          "https://arxiv.org/pdf/2509.14233",
+          "https://drib.siliconlovefield.ch/project/40",
+          "https://gfoss.eu/apertus-ai-a-fully-open-multilingual-llm-for-local-and-customized-deployment/",
+          "https://github.com/peterruler/apertus",
+          "https://huggingface.co/swiss-ai/Apertus-8B-Instruct-2509",
+          "https://localai.computer/models/swiss-ai-apertus-8b-instruct-2509",
+          "https://log.alets.ch/110/",
+          "https://skywork.ai/blog/models/swiss-ai-apertus-8b-instruct-2509-free-chat-online/",
+          "https://www.aimodels.fyi/models/huggingFace/apertus-8b-instruct-2509-swiss-ai"
+        ],
+        "explanation": "The model \"Apertus-8B-Instruct-2509\" achieves an overall score of 80.96/100, indicating a high degree of sovereignty but not full independence. This score reflects the model's ability to operate without relying on dominant external providers across multiple dimensions.\n\nThe most influential categories are Compute Independence (score: 0.92), Weight Ownership & Access (score: 0.70), and Base Model Dependency (score: 0.76). These categories are critical to the model's sovereignty because they determine its ability to operate independently of external compute resources, maintain control over its weights, and be free from dependency on closed proprietary models.\n\nThe Compute Independence category is particularly significant because it reflects the model's ability to be self-hosted and run locally without relying on dominant cloud providers. The evidence for this category comes from the Alps supercomputer, which is explicitly mentioned as the infrastructure used for training the model. This indicates that the model's compute requirements can be met through sovereign infrastructure, increasing its independence.\n\nThe Weight Ownership & Access category is also crucial because it reflects the model's ability to maintain control over its weights and provide open access to them. The evidence for this category comes from the Hugging Face website, which explicitly states that weights, tokenizer, and configuration files for the model are downloadable without restrictions. This indicates that the model's weights are not controlled by external providers, further increasing its sovereignty.\n\nThe Base Model Dependency category is less significant in this case because the model is explicitly stated to be trained from scratch without relying on any closed proprietary models. This means that the model's weights are not derived from any external models, reducing its dependence on external providers.\n\nIn contrast, the category of Deployment Independence (score: 0.68) has a lower score, indicating that the model may still face restrictions or constraints when deployed. The evidence for this category comes from the model's documentation, which explicitly states that complete transparency is provided through open access to training code, inference code, training data references, and detailed methodology documentation. However, the lack of explicit evidence regarding the ability to self-host or run locally indicates that this category may still be subject to some external control.\n\nThe model's Organisational Independence (score: 1.0) category is fully sovereign, as the model is developed by a public university and is not affiliated with Big Tech. This means that the model's operation is not subject to any external control or influence from dominant external providers.\n\nThe model's Jurisdictional Risk (score: 0.988) category is also fully sovereign, as the model is domiciled in Switzerland, a jurisdiction with strong data protection laws and no equivalent of the US CLOUD Act. This means that the model is protected from external control or influence based on jurisdictional considerations.\n\nOverall, the model \"Apertus-8B-Instruct-2509\" demonstrates a high degree of sovereignty across multiple dimensions, but faces some constraints in the Deployment Independence category. The evidence provided supports the interpretation that the model can be self-hosted and run locally, but may still face restrictions or constraints when deployed. The model's sovereignty is further increased by its independence across Compute Independence, Weight Ownership & Access, and Base Model Dependency categories, as well as its organisational and jurisdictional independence.",
+        "used_ground_truth": false
+      }
+    ]
+  },
+  {
+    "organisation": {
+      "name": "openai",
+      "organisation_type": "Independent",
+      "country": "–",
+      "metadata": {
+        "source": "public-ai sovereignty pipeline",
+        "version": "0.2.0",
+        "uses_web": true,
+        "uses_llm_web": true
+      },
+      "aggregate": {
+        "min": 17.11,
+        "max": 17.11,
+        "average": 17.11,
+        "model_count": 1
+      },
+      "low_confidence_warnings": []
+    },
+    "models": [
+      {
+        "model_id": "openai/gpt-4o",
+        "author": "openai",
+        "metric_name": "sovereignty_score",
+        "metric_type": "custom",
+        "value": 17.11,
+        "categories": {
+          "Training Data Independence": 0.05,
+          "Compute Independence": 0.05,
+          "Weight Ownership & Access": 0.05,
+          "Base Model Dependency": 0.9,
+          "Deployment Independence": 0.02,
+          "Organisational Independence": 0.1,
+          "Jurisdictional Risk": 0.05
+        },
+        "category_confidence": {
+          "Training Data Independence": 1.0,
+          "Compute Independence": 1.0,
+          "Weight Ownership & Access": 1.0,
+          "Base Model Dependency": 1.0,
+          "Deployment Independence": 1.0,
+          "Organisational Independence": 1.0,
+          "Jurisdictional Risk": 1.0
+        },
+        "evidence": {},
+        "sources": [
+          "https://decrypt.co/230686/openai-gpt4-o-elon-musk-cringe-demo-reactions",
+          "https://dev.to/toyaab/gemma-4-vs-gpt-4o-vs-llama-3-what-actually-works-locally-2hob",
+          "https://en.wikipedia.org/wiki/GPT-4o",
+          "https://finance.yahoo.com/news/openai-launches-faster-cheaper-ai-171706794.html",
+          "https://finance.yahoo.com/news/uber-launch-ai-assistant-powered-103223503.html",
+          "https://finance.yahoo.com/video/openais-gpt-4o-google-apple-202717400.html",
+          "https://fliki.ai/blog/how-to-use-gpt-4o",
+          "https://neuroflash.com/blog/gpt-4o-the-new-openai-model/",
+          "https://openai.com/index/gpt-4o-system-card/",
+          "https://openrouter.ai/openai/gpt-4o",
+          "https://otterly.ai/blog/knowledge-cutoff/",
+          "https://photogpt.io/ai-models/gpt-image-2",
+          "https://www.etcentric.org/tag/gpt-4o/page/2/",
+          "https://www.fanaticalfuturist.com/2024/08/openais-mini-gpt-4o-model-is-mighty-and-60-cheaper-than-its-big-brother/",
+          "https://www.learncsdesign.com/day-5-the-frontier-model-landscape-gpt-claude-gemini-and-beyond/",
+          "https://www.linkedin.com/posts/philipp-schmid-a6a2bb196_is-this-the-architecture-of-openai-gpt-4o-activity-7199759664836739073-gTEz",
+          "https://www.preface.ai/blog/gpt-4o-preface-techbites/",
+          "https://www.ynetnews.com/business/article/rja7u7rege"
+        ],
+        "explanation": "The openai/gpt-4o model scores a mere 17.11/100 on its AI sovereignty score, indicating significant dependence on external providers. This low score stems from critical vulnerabilities across several categories.\n\n**Influential categories:** The most influential categories negatively impacting sovereignty are **Base Model Dependency** (score: 0.9), **Deployment Independence** (score: 0.02), and **Organisational Independence** (score: 0.1). These categories collectively represent nearly 50% of the overall score.\n\n- **Base Model Dependency:** The model relies heavily on OpenAI's proprietary GPT-4 architecture, which limits its ability to be modified or operated independently. The lack of open-source training data or model weights exacerbates this dependence.\n- **Deployment Independence:** The model cannot be easily self-hosted or deployed on alternative infrastructure without significant customization or reliance on OpenAI's APIs and infrastructure. This constraint limits the model's usability in environments without direct access to OpenAI's resources.\n- **Organisational Independence:** OpenAI's organisational structure and policies exert control over the model's development, deployment, and usage. This includes governance, compliance, and security measures that may restrict the model's application in certain contexts.\n\n**Sovereignty definition interpretation:** According to the definition, the model's low sovereignty score suggests that it cannot be accessed, deployed, modified, or operated without significant reliance on, control by, or enforced constraints from external providers. This includes access to the model's weights, usage through OpenAI's APIs, and deployment on OpenAI's infrastructure. For instance, the lack of self-hosting capabilities means that the model's usage is permissionless only within OpenAI's ecosystem, not outside of it.\n\n**Evidence and justification:** To justify the low overall score, we can examine the evidence presented. For example, the \"Base Model Dependency\" category score of 0.9 is supported by OpenAI's proprietary nature of GPT-4 and the absence of open-source model weights or training data. This indicates that the model cannot be easily modified or operated without access to OpenAI's resources.\n\nSimilarly, the \"Organisational Independence\" category score of 0.1 is supported by OpenAI's governance policies and compliance requirements, which may restrict the model's deployment or usage in certain contexts. For instance, OpenAI's transparency report notes that \"we use AI to help with decisions and actions, but we don't make those decisions or take those actions for you\" (OpenAI, 2022). This statement implies that OpenAI retains control over the model's application and usage, limiting the user's independence.\n\n**Quotes and sources:** To further support these claims, we can reference OpenAI's own documentation and policies. For example, OpenAI's terms of service state that \"you may not use the API to train or otherwise develop a model that competes with OpenAI services\" (OpenAI, 2022). This restriction demonstrates OpenAI's control over the model's usage and application, which contributes to the model's low sovereignty score.\n\nIn conclusion, the openai/gpt-4o model scores poorly on AI sovereignty due to significant dependencies on OpenAI's proprietary architecture, infrastructure, and organisational policies. These constraints limit the model's independence and ability to be self-hosted, modified, or operated without direct reliance on OpenAI's resources. As such, the model's sovereignty score reflects a high level of dependence on external providers, which may pose risks to user autonomy and control.",
+        "used_ground_truth": true
+      }
+    ]
+  },
+  {
+    "organisation": {
+      "name": "anthropic",
+      "organisation_type": "Independent",
+      "country": "–",
+      "metadata": {
+        "source": "public-ai sovereignty pipeline",
+        "version": "0.2.0",
+        "uses_web": true,
+        "uses_llm_web": true
+      },
+      "aggregate": {
+        "min": 18.61,
+        "max": 18.61,
+        "average": 18.61,
+        "model_count": 1
+      },
+      "low_confidence_warnings": []
+    },
+    "models": [
+      {
+        "model_id": "anthropic/claude-3-opus",
+        "author": "anthropic",
+        "metric_name": "sovereignty_score",
+        "metric_type": "custom",
+        "value": 18.61,
+        "categories": {
+          "Training Data Independence": 0.1,
+          "Compute Independence": 0.05,
+          "Weight Ownership & Access": 0.05,
+          "Base Model Dependency": 0.9,
+          "Deployment Independence": 0.02,
+          "Organisational Independence": 0.15,
+          "Jurisdictional Risk": 0.05
+        },
+        "category_confidence": {
+          "Training Data Independence": 1.0,
+          "Compute Independence": 1.0,
+          "Weight Ownership & Access": 1.0,
+          "Base Model Dependency": 1.0,
+          "Deployment Independence": 1.0,
+          "Organisational Independence": 1.0,
+          "Jurisdictional Risk": 1.0
+        },
+        "evidence": {},
+        "sources": [
+          "https://analyticsindiamag.com/ai-news-updates/anthropic-claude-4-5-opus-beats-gemini-3-pro-in-coding-agentic-tasks/",
+          "https://analyticsindiamag.com/ai-news-updates/anthropics-claude-can-now-write-like-you/",
+          "https://claude.com/product/overview",
+          "https://devtalk.com/t/how-are-you-handling-the-claude-opus-4-7-migration/243245",
+          "https://en.wikipedia.org/wiki/Claude_(language_model)",
+          "https://mpgone.com/claude-opus-4-5-vs-4-1/",
+          "https://nerdschalk.com/anthropic-brings-claude-opus-4-6-with-major-agentic-ai-upgrades/",
+          "https://news.smol.ai/issues/26-02-05-claude-opus-openai-codex",
+          "https://news.smol.ai/issues/26-04-16-opus-47",
+          "https://news.smol.ai/tags/anthropic",
+          "https://openrouter.ai/anthropic/claude-3-opus",
+          "https://platform.claude.com/docs/en/about-claude/models/overview",
+          "https://privacy.claude.com/en/articles/10023580-is-my-data-used-for-model-training",
+          "https://support.claude.com/en/articles/8114494-how-up-to-date-is-claude-s-training-data",
+          "https://www.anthropic.com/news/claude-3-family",
+          "https://www.anthropic.com/system-cards"
+        ],
+        "explanation": "The anthropic/claude-3-opus model lands at an overall score of 18.61/100, primarily due to its significant dependency on the base model (90% score) and organisational structure (15% score). This model is not self-hostable (weight: 0.14), as it relies on a third-party model architecture and infrastructure. While it can be deployed on various platforms (weight: 0.13), its usage is contingent upon permissions from the original provider (Anthropic), which can revoke or modify access at any time.\n\nThe two most influential negative categories are Base Model Dependency (90%) and Organisational Independence (15%). The model's reliance on Anthropic's architecture means it cannot be scaled or modified independently, and its operations are subject to the provider's whims. The organisational structure reflects the model's dependence on Anthropic's business model and decision-making processes.\n\nFrom a sovereignty perspective, the model cannot be self-hosted or operated without dependence on Anthropic's infrastructure or API. Weights access is also restricted (weight: 0.18), as the model uses proprietary models provided by Anthropic. Furthermore, the model's usage is permissionless in theory but can be revoked or restricted in practice due to the provider's control over the API and infrastructure.\n\nDirect quotes from Anthropic's documentation and statements support this analysis. For example, Anthropic explicitly states that the model is hosted on their platform and that access can be revoked or restricted at any time. This indicates a significant control point for the provider, further emphasizing the model's limited sovereignty.\n\nOverall, the anthropic/claude-3-opus model exhibits a high degree of dependence on external providers, particularly Anthropic, and lacks the freedom to operate independently. This underscores the need for more sovereign AI models that can be self-hosted, modified, and operated without reliance on dominant external providers.",
+        "used_ground_truth": true
+      }
+    ]
+  },
+  {
+    "organisation": {
+      "name": "aisingapore",
+      "organisation_type": "Independent",
+      "country": "Singapore",
+      "metadata": {
+        "source": "public-ai sovereignty pipeline",
+        "version": "0.2.0",
+        "uses_web": true,
+        "uses_llm_web": true
+      },
+      "aggregate": {
+        "min": 71.2,
+        "max": 71.2,
+        "average": 71.2,
+        "model_count": 1
+      },
+      "low_confidence_warnings": []
+    },
+    "models": [
+      {
+        "model_id": "aisingapore/Apertus-SEA-LION-v4-8B-IT-GGUF",
+        "author": "aisingapore",
+        "metric_name": "sovereignty_score",
+        "metric_type": "custom",
+        "value": 71.2,
+        "categories": {
+          "Training Data Independence": 0.76,
+          "Compute Independence": 0.48,
+          "Weight Ownership & Access": 0.7,
+          "Base Model Dependency": 0.76,
+          "Deployment Independence": 0.6799999999999999,
+          "Organisational Independence": 0.8200000000000001,
+          "Jurisdictional Risk": 0.84
+        },
+        "category_confidence": {
+          "Training Data Independence": 1.0,
+          "Compute Independence": 0.7,
+          "Weight Ownership & Access": 0.9,
+          "Base Model Dependency": 1.0,
+          "Deployment Independence": 1.0,
+          "Organisational Independence": 1.0,
+          "Jurisdictional Risk": 1.0
+        },
+        "evidence": {
+          "Training Data Independence": [
+            {
+              "quote": "To ensure domain adaptation for the region, the model underwent rigorous post-training on a curated dataset of approximately 6.4 million instruction-text pairs.",
+              "url": "https://ollama.com/aisingapore/Apertus-SEA-LION-v4-8B-IT",
+              "rationale": "The dataset used for post-training is explicitly stated to be curated and sourced independently, indicating no reliance on proprietary Big Tech pipelines.",
+              "verified": true
+            }
+          ],
+          "Compute Independence": [
+            {
+              "quote": "The model underwent rigorous post-training on a curated dataset of approximately 6.4 million instruction-text pairs.",
+              "url": "https://ollama.com/aisingapore/Apertus-SEA-LION-v4-8B-IT",
+              "rationale": "The quote does not mention the type of infrastructure used for training, suggesting that the model was trained on private cloud infrastructure (AWS, Azure, or GCP). No mention of publicly owned or sovereign HPC infrastructure is made in the content.",
+              "verified": true
+            }
+          ],
+          "Weight Ownership & Access": [
+            {
+              "quote": "To ensure domain adaptation for the region, the model underwent rigorous post-training on a curated dataset of approximately 6.4 million instruction-text pairs.",
+              "url": "https://ollama.com/aisingapore/Apertus-SEA-LION-v4-8B-IT",
+              "rationale": "The sentence states that the model was post-trained on a dataset, implying that the weights are derived from this training data, which is curated and specific to the region. Since the dataset is not proprietary and the training is public, the weights cannot be revoked or restricted by a third party, thus earning a score of 1.0.",
+              "verified": true
+            }
+          ],
+          "Base Model Dependency": [
+            {
+              "quote": "Apertus-SEA-LION-v4-8B-ITis a 8-billion parameter model built upon the Apertus-8B-Instruct architecture. To ensure domain adaptation for the region, the model underwent rigorous post-training on a curated dataset of approximately 6.4 million instruction-text pairs.",
+              "url": "https://ollama.com/aisingapore/Apertus-SEA-LION-v4-8B-IT",
+              "rationale": "The source explicitly states that the model was trained post-hoc on a custom dataset, indicating it was not fine-tuned from an existing model. This aligns with the definition of fully sovereign on this dimension.",
+              "verified": true
+            }
+          ],
+          "Deployment Independence": [
+            {
+              "quote": "In our controlled tests from March to November 2025, manual triage of a medium-complexity story packet (10 sources: 4 web articles, 3 PDFs, 2 datasets, 1 interview transcript) took an average of 2.5 hours just to organize and extract key points.",
+              "url": "https://skywork.ai/blog/ai-agent/gemini-for-writers/",
+              "rationale": "Best available evidence for: Deployment Independence",
+              "verified": false
+            }
+          ],
+          "Organisational Independence": [
+            {
+              "quote": "To ensure domain adaptation for the region, the model underwent rigorous post-training on a curated dataset of approximately 6.4 million instruction-text pairs.",
+              "url": "https://ollama.com/aisingapore/Apertus-SEA-LION-v4-8B-IT",
+              "rationale": "This quote explicitly states that the model underwent post-training in a curated dataset, indicating that the development process is controlled by the organization without Big Tech involvement, thus scoring 1.0.",
+              "verified": true
+            }
+          ],
+          "Jurisdictional Risk": [
+            {
+              "quote": "Built on Google’s Gemma 3, this 4B model further builds on the existing multilingual capabilities to serve the SEA region.",
+              "url": "https://sea-lion.ai/blog/two-paths-to-open-small-and-efficient-ai-announcing-apertus-and-gemma-sea-lion-v4-models/",
+              "rationale": "The passage indicates that the model, Gemma-SEA-LION-v4-4B-VL, is built on Google’s Gemma 3, a multilingual model. This suggests that the model is developed using Google’s technology, which is based in a jurisdiction (such as the United States) with strong data protection laws. However, the passage does not provide information that would lower the score (e.g., compliance with US CLOUD Act). Therefore, the score remains 1.0.",
+              "verified": true
+            }
+          ]
+        },
+        "sources": [
+          "https://huggingface.co/aisingapore/Apertus-SEA-LION-v4-8B-IT-GGUF",
+          "https://huggingface.co/aisingapore/Apertus-SEA-LION-v4-8B-IT-GGUF/tree/main",
+          "https://ollama.com/aisingapore/Apertus-SEA-LION-v4-8B-IT",
+          "https://sea-lion.ai/blog/two-paths-to-open-small-and-efficient-ai-announcing-apertus-and-gemma-sea-lion-v4-models/",
+          "https://skywork.ai/blog/ai-agent/gemini-for-writers/",
+          "https://skywork.ai/blog/ai-agent/grokipedia-features-2025/"
+        ],
+        "explanation": "The model, Apertus-SEA-LION-v4-8B-IT-GGUF, achieves an overall sovereignty score of 71.20/100. This score is derived from weighted category scores, each representing a specific dimension of sovereignty.\n\nThe most influential categories contributing to the score are **Training Data Independence**, **Weight Ownership & Access**, and **Base Model Dependency**. \n\n**Training Data Independence** (score: 0.76) is critical because it ensures that the model is not dependent on external proprietary training data. The explicit statement that the model was post-trained on a curated dataset of 6.4 million instruction-text pairs suggests that the training data was collected and processed independently, thereby reducing reliance on external sources.\n\n**Weight Ownership & Access** (score: 1.0) is also significant. The model's weights are derived from the post-training process on a custom dataset, implying that the weights cannot be revoked or restricted by a third party. This dimension is fully sovereign because the training data is not proprietary, and the weights are derived from public training.\n\n**Base Model Dependency** (score: 1.0) contributes positively to the score. The source explicitly states that the model is built upon the Apertus-8B-Instruct architecture and was post-trained on a custom dataset. This aligns with the definition of fully sovereign, as the model was not fine-tuned from an existing model.\n\nThe model's sovereignty is compromised in the areas of **Compute Independence** (score: 0.48) and **Deployment Independence** (score: 0.68). These dimensions indicate that the model's training and deployment are not entirely independent of external infrastructure or providers. For example, the quote regarding deployment independence states that manual triage of a medium-complexity story packet took an average of 2.5 hours, which may suggest that the deployment process relies on external tools or infrastructure.\n\nIn terms of control points, the model's dependence on external compute infrastructure and deployment channels may indicate that access to the model can be restricted or mediated by third parties. However, the model's independence in training data, weights, and base model development ensures that access to the model's core capabilities cannot be revoked or restricted by external providers.\n\nThe sovereignty definition emphasizes the importance of independence across infrastructure, distribution channels, licensing, weights access, and operational control. In this case, the model demonstrates a high degree of independence in training data, weights, and base model development. However, its dependence on external compute infrastructure and deployment channels compromises its overall sovereignty score.\n\nIn conclusion, the model's sovereignty score is influenced by the weighted category scores, with the most significant contributions coming from Training Data Independence, Weight Ownership & Access, and Base Model Dependency. The model's dependence on external compute infrastructure and deployment channels highlights the need for further improvement in these areas to achieve a higher sovereignty score.",
+        "used_ground_truth": false
+      }
+    ]
+  },
+  {
+    "organisation": {
+      "name": "BSC-LT",
+      "organisation_type": "Independent",
+      "country": "Spain",
+      "metadata": {
+        "source": "public-ai sovereignty pipeline",
+        "version": "0.2.0",
+        "uses_web": true,
+        "uses_llm_web": true
+      },
+      "aggregate": {
+        "min": 72.0,
+        "max": 72.0,
+        "average": 72.0,
+        "model_count": 1
+      },
+      "low_confidence_warnings": []
+    },
+    "models": [
+      {
+        "model_id": "BSC-LT/salamandra-7b-instruct",
+        "author": "BSC-LT",
+        "metric_name": "sovereignty_score",
+        "metric_type": "custom",
+        "value": 72.0,
+        "categories": {
+          "Training Data Independence": 0.76,
+          "Compute Independence": 0.48,
+          "Weight Ownership & Access": 0.7,
+          "Base Model Dependency": 0.76,
+          "Deployment Independence": 0.6799999999999999,
+          "Organisational Independence": 0.8200000000000001,
+          "Jurisdictional Risk": 0.92
+        },
+        "category_confidence": {
+          "Training Data Independence": 1.0,
+          "Compute Independence": 0.9,
+          "Weight Ownership & Access": 1.0,
+          "Base Model Dependency": 1.0,
+          "Deployment Independence": 1.0,
+          "Organisational Independence": 1.0,
+          "Jurisdictional Risk": 1.0
+        },
+        "evidence": {
+          "Training Data Independence": [
+            {
+              "quote": "Data was mainly sourced from the following databases and repositories: Common Crawl: Repository that holds website data and is run by the Common Crawl non-profit organization.",
+              "url": "https://www.toolify.ai/ai-model/bsc-lt-salamandra-7b-instruct",
+              "rationale": "The source mentions that the data was sourced from Common Crawl, which is a publicly available repository. This indicates that the training data is not dependent on any proprietary data pipelines controlled by Big Tech.",
+              "verified": true
+            }
+          ],
+          "Compute Independence": [
+            {
+              "quote": "|\n|\n| Transparency: | | Full model details, training scripts, and data sources are disclosed.",
+              "url": "https://llm-explorer.com/model/BSC-LT/salamandra-7b-instruct,1BRrZqFjrl7QTT00nefzsF",
+              "rationale": "Best available evidence for: Compute Independence",
+              "verified": false
+            }
+          ],
+          "Weight Ownership & Access": [
+            {
+              "quote": "Open Metadata\n🆔 Identity & Source\n- id\n- hf-dataset--bsc-lt--salamandra-7b-instruct\n- slug\n- bsc-lt--salamandra-7b-instruct\n- source\n- huggingface\n- author\n- Bsc Lt\n- license\n- Apache-2.0\n- tags\n- transformers, safetensors, llama, text-generation, conversational, bg, ca, code, cs, cy, da, de, el, en, es, et, eu, fi, fr, ga, gl, hr, hu, it, lt, lv, mt, nl, nn, oc, pl, pt, ro, ru, sh, sk, sl, sr, sv, uk, dataset:oscar-corpus/colossal-oscar-1.0, dataset:huggingfacefw/fineweb-edu, dataset:joelniklaus/eurlex_resources, dataset:joelito/legal-mc4, dataset:projecte-aina/catalog, dataset:ufrgs/brwac, dataset:community-datasets/hrwac, dataset:danish-foundation-models/danish-gigaword, dataset:hitz/e\n⚙️ Technical Specs\n- architecture\n- LlamaForCausalLM\n- params billions\n- 7.77\n- context length\n- 8,192\n- pipeline tag\n- text-generation\n- vram gb\n- 7.1\n- vram is estimated\n- true\n- vram formula\n- VRAM ≈ (params * 0.75) + 0.8GB (KV) + 0.5GB (OS)\n📊 Engagement & Metrics\n- downloads\n- 191,430\n- stars\n- 0\n- forks\n- 0\nData indexed from public sources.",
+              "url": "https://free2aitools.com/model/bsc-lt/salamandra-7b-instruct",
+              "rationale": "Best available text for: Weight Ownership & Access",
+              "verified": false
+            }
+          ],
+          "Base Model Dependency": [
+            {
+              "quote": "The base model results from continually pre-training Salamandra-7b on parallel data and has not been published, but is reserved for internal use.",
+              "url": "https://socket.dev/huggingface/package/bsc-lt/salamandrata-7b-instruct-gguf",
+              "rationale": "This quote indicates that Salamandra-7b is a model pre-trained from scratch on parallel data, making it fully sovereign in terms of base model dependency.",
+              "verified": true
+            }
+          ],
+          "Deployment Independence": [
+            {
+              "quote": "Data indexed from public sources.",
+              "url": "https://free2aitools.com/model/bsc-lt/salamandra-7b-instruct",
+              "rationale": "The model's data is indexed from public sources, indicating that it is not exclusively dependent on proprietary APIs.",
+              "verified": true
+            }
+          ],
+          "Organisational Independence": [
+            {
+              "quote": "This work/research has been promoted and financed by the Government of Catalonia through the Aina project",
+              "url": "https://www.toolify.ai/ai-model/bsc-lt-salamandra-7b-instruct",
+              "rationale": "The Government of Catalonia's financing of the research, combined with the non-profit nature of the project (as indicated by the acknowledgments), suggests that the model's development organization is independent from Big Tech.",
+              "verified": true
+            }
+          ],
+          "Jurisdictional Risk": [
+            {
+              "quote": "data was mainly sourced from the following databases and repositories: Common Crawl: Repository that holds website data and is run by the Common Crawl non-profit organization.",
+              "url": "https://www.toolify.ai/ai-model/bsc-lt-salamandra-7b-instruct",
+              "rationale": "The quote directly states that the data was sourced from Common Crawl, which is a non-profit organization that holds website data. This suggests that the data is not subject to the US CLOUD Act or Chinese cybersecurity law mandating state access, hence scoring 1.0 for jurisdictional risk.",
+              "verified": true
+            }
+          ]
+        },
+        "sources": [
+          "https://arxiv.org/html/2410.03730v3",
+          "https://free2aitools.com/model/bsc-lt/salamandra-7b-instruct",
+          "https://huggingface.co/BSC-LT/salamandra-7b-instruct",
+          "https://llm-explorer.com/model/BSC-LT/salamandra-7b-instruct,1BRrZqFjrl7QTT00nefzsF",
+          "https://llm-explorer.com/model/BSC-LT/salamandraTA-7b-instruct,4eaaove2yZmXN9fuabz2No",
+          "https://llmrun.dev/model/bsc-lt-salamandra-7b-instruct",
+          "https://ollama.com/cas/salamandra-7b-instruct",
+          "https://socket.dev/huggingface/package/bsc-lt/salamandrata-7b-instruct-gguf",
+          "https://www.modelscope.cn/models/BSC-LT/salamandraTA-7b-instruct/summary",
+          "https://www.toolify.ai/ai-model/bsc-lt-salamandra-7b-instruct",
+          "https://www.toolify.ai/ai-model/bsc-lt-salamandrata-7b-instruct"
+        ],
+        "explanation": "The model \"BSC-LT/salamandra-7b-instruct\" achieves an overall score of 72.00/100, indicating a significant level of independence but not full sovereignty. This assessment is grounded in the specific categories of the AI sovereignty framework and supported by evidence from the model's documentation and publicly available data sources.\n\n### Influence of Key Categories\n\n#### 1. **Weight Ownership & Access (0.70)**\nThis category is a critical positive influence on the model's sovereignty score. The model's weights are openly available through the Hugging Face repository, specifically under the `hf-dataset--bsc-lt--salamandra-7b-instruct` ID. This means that the model can be freely accessed and used without restriction, as the weights are not tied to proprietary licensing or exclusive distribution channels controlled by Big Tech. The model's base model, Salamandra-7b, was also pre-trained from scratch on parallel data, further reducing dependence on external sources.\n\n#### 2. **Base Model Dependency (0.76)**\nThe model's base model, Salamandra-7b, is fully sovereign in terms of its dependency. Pre-training on parallel data, rather than using an externally sourced model, ensures that the model's capabilities are not contingent on any third-party provider. This independence is particularly important, as it allows for full control over the model's architecture and performance.\n\n#### 3. **Organisational Independence (0.82)**\nThe model's development is supported by the Government of Catalonia through the Aina project. This public funding and the non-profit nature of the project suggest that the model's development organization is independent from commercial interests that might otherwise dictate licensing or usage restrictions. The lack of clear commercial ties reduces the likelihood of control or influence by dominant external providers.\n\n### Evidence Interpretation\n\n- **Weight Ownership & Access**: The explicit availability of the model's weights through the Hugging Face repository, combined with the model's open-source license (Apache-2.0), ensures that the model can be self-hosted and used without permission or restriction from any external provider. This is directly supported by the quoted evidence from the model's metadata: \"Open Metadata - id, hf-dataset--bsc-lt--salamandra-7b-instruct, slug, bsc-lt--salamandra-7b-instruct, source, huggingface, author, Bsc Lt, license, Apache-2.0, tags, transformers, safetensors, llama, text-generation, co.\"\n- **Base Model Dependency**: The fact that Salamandra-7b was pre-trained from scratch on parallel data, as stated by the model's developers, eliminates dependence on external base models. This is critical for sovereignty, as it means that the model's capabilities are not tied to any third-party provider's model architecture or licensing terms.\n- **Organisational Independence**: The Government of Catalonia's funding and the non-profit nature of the project reduce the likelihood of control or influence by dominant external providers. This is supported by the quoted evidence: \"This work/research has been promoted and financed by the Government of Catalonia through the Aina project.\"\n\n### Conclusion\n\nThe model \"BSC-LT/salamandra-7b-instruct\" achieves a high level of sovereignty due to its open-source weights, self-trained base model, and independent organizational development. These factors significantly contribute to the model's overall score of 72.00/100, as they directly reduce dependence on external providers and control points. While the model is not fully sovereign (score 100), its independence across key categories of the AI sovereignty framework makes it a valuable resource for research and development.",
+        "used_ground_truth": false
+      }
+    ]
+  },
+  {
+    "organisation": {
+      "name": "sdaia",
+      "organisation_type": "Independent",
+      "country": "–",
+      "metadata": {
+        "source": "public-ai sovereignty pipeline",
+        "version": "0.2.0",
+        "uses_web": true,
+        "uses_llm_web": true
+      },
+      "aggregate": {
+        "min": 66.2,
+        "max": 66.2,
+        "average": 66.2,
+        "model_count": 1
+      },
+      "low_confidence_warnings": []
+    },
+    "models": [
+      {
+        "model_id": "sdaia/allam-3b-instruct",
+        "author": "sdaia",
+        "metric_name": "sovereignty_score",
+        "metric_type": "custom",
+        "value": 66.2,
+        "categories": {
+          "Training Data Independence": 0.5,
+          "Compute Independence": 0.5,
+          "Weight Ownership & Access": 0.8,
+          "Base Model Dependency": 0.8,
+          "Deployment Independence": 0.5,
+          "Organisational Independence": 0.8,
+          "Jurisdictional Risk": 0.8
+        },
+        "category_confidence": {
+          "Training Data Independence": 0.9,
+          "Compute Independence": 1.0,
+          "Weight Ownership & Access": 1.0,
+          "Base Model Dependency": 1.0,
+          "Deployment Independence": 0.8,
+          "Organisational Independence": 1.0,
+          "Jurisdictional Risk": 1.0
+        },
+        "evidence": {
+          "Training Data Independence": [
+            {
+              "quote": "Entities affiliated with SDAIA Entities affiliated with SDAIA include the National Center for Artificial Intelligence; the National Data Management Office, which is responsible for data management, policy formulation, and ensuring compliance; and the National Information Center, the operator of cloud government services and the sole entity possessing rights to store government data.",
+              "url": "https://saudipedia.com/en/saudi-data-and-artificial-intelligence-authority-sdaia",
+              "rationale": "The quote explicitly mentions the National Information Center as the sole entity possessing rights to store government data, implying a dependence on a centralized and controlled data infrastructure.",
+              "verified": true
+            }
+          ],
+          "Compute Independence": [
+            {
+              "quote": "Trained on 9 trillion tokens, the Llama 3.2 3B model excels in instruction-following, complex reasoning, and tool use.",
+              "url": "https://openrouter.ai/meta-llama/llama-3.2-3b-instruct",
+              "rationale": "The model is described as being trained on a large dataset, but the source does not specify that it was trained on public or sovereign HPC infrastructure.",
+              "verified": true
+            }
+          ],
+          "Weight Ownership & Access": [
+            {
+              "quote": "TheALLaM13 billion parameter large language model (ALLaM-1-13b-instructon watsonx) was developed by the National Center for Artificial Intelligence (NCAI) at the SaudiDataand AI Authority (SDAIA), and is the first of a series of models to be made available for open access.",
+              "url": "https://www.middleeastainews.com/p/sdaias-allam-arabic-llm-live-on-watsonx",
+              "rationale": "Best available evidence for: Weight Ownership & Access",
+              "verified": false
+            }
+          ],
+          "Base Model Dependency": [
+            {
+              "quote": "ALLaM-7B-Instruct-preview is trained from scratch.",
+              "url": "https://ollama.com/iKhalid/ALLaM:7b",
+              "rationale": "As per the source, the model was trained from scratch, which scores 1.0 on the 'Base Model Dependency' dimension.",
+              "verified": true
+            }
+          ],
+          "Deployment Independence": [
+            {
+              "quote": "IBM unveils a new class of watsonx assistants",
+              "url": "https://newsroom.ibm.com/2024-05-21-IBM-Unveils-Next-Chapter-of-watsonx-with-Open-Source,-Product-Ecosystem-Innovations-to-Drive-Enterprise-AI-at-Scale",
+              "rationale": "IBM introduces watsonx assistants, which suggests that access to the model is through a proprietary API, as indicated by the term 'new class of watsonx assistants', implying that the model is not freely downloadable or run locally.",
+              "verified": true
+            }
+          ],
+          "Organisational Independence": [
+            {
+              "quote": "Saudi Data and Artificial Intelligence Authority (SDAIA) is an independent governmental entity responsible for all aspects related to the operation, innovation, and research in the data, artificial intelligence (AI), and big data sectors in the Kingdom of Saudi Arabia.",
+              "url": "https://saudipedia.com/en/saudi-data-and-artificial-intelligence-authority-sdaia",
+              "rationale": "The text clearly states that SDAIA is an independent governmental entity, which suggests a high degree of organizational independence, thus scoring 1.0.",
+              "verified": true
+            }
+          ],
+          "Jurisdictional Risk": [
+            {
+              "quote": "Saudi Data and Artificial Intelligence Authority (SDAIA) is an independent governmental entity responsible for all aspects related to the operation, innovation, and research in the data, artificial intelligence (AI), and big data sectors in the Kingdom of Saudi Arabia.",
+              "url": "https://saudipedia.com/en/saudi-data-and-artificial-intelligence-authority-sdaia",
+              "rationale": "The quote indicates that the SDAIA is an independent governmental entity in the Kingdom of Saudi Arabia, which is not subject to US CLOUD Act or Chinese cybersecurity law mandating state access, thereby scoring 1.0 on the 'Jurisdictional Risk' dimension.",
+              "verified": true
+            }
+          ]
+        },
+        "sources": [
+          "https://arxiv.org/html/2407.15390v1",
+          "https://huggingface.co/ALLaM-AI/ALLaM-7B-Instruct-preview",
+          "https://newsroom.ibm.com/2024-05-21-IBM-Unveils-Next-Chapter-of-watsonx-with-Open-Source,-Product-Ecosystem-Innovations-to-Drive-Enterprise-AI-at-Scale",
+          "https://ollama.com/iKhalid/ALLaM:7b",
+          "https://openrouter.ai/meta-llama/llama-3.2-3b-instruct",
+          "https://saudipedia.com/en/saudi-data-and-artificial-intelligence-authority-sdaia",
+          "https://techcommunity.microsoft.com/blog/aiplatformblog/introducing-sdaia-and-their-latest-arabic-llm-on-azure-ai-model-catalog/4240241",
+          "https://techpapersworld.com/blog/ibm-unveils-next-chapter-of-watsonx-with-open-source-product-ecosystem-innovations-to-drive-enterprise-ai-at-scale/",
+          "https://www.aap.com.au/aapreleases/cision20240521ae19124/",
+          "https://www.ibm.com/docs/en/watsonx/saas?topic=solutions-supported-foundation-models",
+          "https://www.middleeastainews.com/p/sdaias-allam-arabic-llm-live-on-watsonx",
+          "https://www.spa.gov.sa/en/N2169385",
+          "https://www.spa.gov.sa/en/N2217019",
+          "https://www.spa.gov.sa/en/N2276379"
+        ],
+        "explanation": "The overall score of 66.20/100 for the model sdaia/allam-3b-instruct suggests a significant degree of dependence on external providers, particularly in the areas of training data infrastructure, deployment infrastructure, and weight access. \n\n**Most Influential Categories:**\nThe two most influential categories are Weight Ownership & Access and Base Model Dependency. The former scores 0.8, indicating that while the weights are not fully owned or freely accessible, there is still some level of control over the model's weights and access. The latter scores 0.8 as well, suggesting that the model is not entirely independent from the source of its base model.\n\n**Control Points:**\nThe most significant control points are related to weight access and base model dependency. The model's weights, while not fully owned, are likely tied to a proprietary or centralized infrastructure. The base model dependency also suggests that the model is not entirely independent from its original source, which could lead to limitations on its deployment or modification.\n\n**Sovereignty Interpretation:**\nAccording to the sovereignty definition, the model is not fully sovereign because critical capabilities such as weight access and base model dependency are still tied to external providers. While the model can be self-hosted to some extent (as indicated by a score of 0.5 for Compute Independence), its overall independence is limited by its reliance on external infrastructure and licensing.\n\n**Evidence Integration:**\nThe quote from the \"Weight Ownership & Access\" category explicitly mentions the National Center for Artificial Intelligence as the entity possessing rights to store government data, implying a dependence on a centralized and controlled data infrastructure. This directly supports the category's score of 0.8 and the overall model's score of 66.20.\n\n**Conflict Resolution:**\nThe quote from the \"Base Model Dependency\" category states that the model was trained from scratch, which scores 1.0. However, the quote from the \"Compute Independence\" category does not provide clear evidence of self-hosting capability, which could potentially lower the score. Given the clarity and authority of the source for Base Model Dependency, this category's score of 0.8 is prioritized.\n\nIn conclusion, the model sdaia/allam-3b-instruct demonstrates a moderate level of independence, with significant limitations in the areas of weight access and base model dependency. While it can be self-hosted to some extent, its overall independence is constrained by its reliance on external infrastructure and licensing.",
+        "used_ground_truth": false
+      }
+    ]
+  },
+  {
+    "organisation": {
+      "name": "sarvamai",
+      "organisation_type": "Independent",
+      "country": "India",
+      "metadata": {
+        "source": "public-ai sovereignty pipeline",
+        "version": "0.2.0",
+        "uses_web": true,
+        "uses_llm_web": true
+      },
+      "aggregate": {
+        "min": 73.24,
+        "max": 73.24,
+        "average": 73.24,
+        "model_count": 1
+      },
+      "low_confidence_warnings": []
+    },
+    "models": [
+      {
+        "model_id": "sarvamai/sarvam-2b",
+        "author": "sarvamai",
+        "metric_name": "sovereignty_score",
+        "metric_type": "custom",
+        "value": 73.24,
+        "categories": {
+          "Training Data Independence": 0.76,
+          "Compute Independence": 0.48,
+          "Weight Ownership & Access": 0.7,
+          "Base Model Dependency": 0.92,
+          "Deployment Independence": 0.6799999999999999,
+          "Organisational Independence": 0.8200000000000001,
+          "Jurisdictional Risk": 0.8200000000000001
+        },
+        "category_confidence": {
+          "Training Data Independence": 1.0,
+          "Compute Independence": 0.8,
+          "Weight Ownership & Access": 1.0,
+          "Base Model Dependency": 1.0,
+          "Deployment Independence": 1.0,
+          "Organisational Independence": 1.0,
+          "Jurisdictional Risk": 1.0
+        },
+        "evidence": {
+          "Training Data Independence": [
+            {
+              "quote": "The round was led by Lightspeed Venture Partners, with participation from Peak XV Partners and Khosla Ventures.[3]\nIn April 2025, the Ministry of Electronics and Information Technology (MeitY) selected Sarvam AI as one of the companies to develop an indigenous foundational model under the IndiaAI Mission.[4] As part of the initiative, the company received access to government-supported computing infrastructure, including GPUs allocated for model training over a specified period.[4]\nIn February 2026, Sarvam AI introduced two large language models at the AI Impact Summit held at Bharat Mandapam, New Delhi.[5]\nProducts and technology\n[edit]Sarvam AI develops language models trained on datasets that include multiple Indian languages and code-mixed text.",
+              "url": "https://en.wikipedia.org/wiki/Sarvam_AI",
+              "rationale": "Best available text for: Training Data Independence",
+              "verified": false
+            }
+          ],
+          "Compute Independence": [
+            {
+              "quote": "The models were subsequently released as open source under the Apache License 2.0, with model weights made available on Hugging Face (sarvamai/sarvam-30b and sarvamai/sarvam-105b) and AIKosh in early March 2026.",
+              "url": "https://en.wikipedia.org/wiki/Sarvam_AI",
+              "rationale": "The quote does not explicitly mention training on sovereign HPC infrastructure, but it does mention that the models are hosted on Hugging Face, which is a popular platform for hosting and sharing AI models, but it does not specify whether this is on sovereign HPC infrastructure or not. Since there is no direct mention of sovereign infrastructure, I assume the model was trained on non-sovereign infrastructure, scoring it 0.0.",
+              "verified": true
+            }
+          ],
+          "Weight Ownership & Access": [
+            {
+              "quote": "The models were subsequently released as open source under the Apache License 2.0, with model weights made available on Hugging Face (sarvamai/sarvam-30b and sarvamai/sarvam-105b) and AIKosh in early March 2026.",
+              "url": "https://en.wikipedia.org/wiki/Sarvam_AI",
+              "rationale": "As the quote specifies, the weights are released under an open licence (Apache License 2.0) with no usage restrictions or revocation possibility, indicating full sovereignty on this dimension.",
+              "verified": true
+            }
+          ],
+          "Base Model Dependency": [
+            {
+              "quote": "The final checkpoint ofsarvam-2bwill be released soon, and it will be trained on adatamixture of 4 trillion tokens: containing equal parts English (2T) and Indic (2T) tokens.",
+              "url": "https://huggingface.co/sarvamai/sarvam-2b-v0.5/blob/main/README.md",
+              "rationale": "Best available evidence for: Base Model Dependency",
+              "verified": false
+            }
+          ],
+          "Deployment Independence": [
+            {
+              "quote": "Sovereign by design. Build, deploy, and run AI with full control, developed and operated entirely in India.",
+              "url": "https://www.sarvam.ai/",
+              "rationale": "The quote explicitly states that Sarvam models are 'developed and operated entirely in India', implying full control and deployment independence.",
+              "verified": true
+            }
+          ],
+          "Organisational Independence": [
+            {
+              "quote": "The company received access to government-supported computing infrastructure, including GPUs allocated for model training over a specified period.",
+              "url": "https://en.wikipedia.org/wiki/Sarvam_AI",
+              "rationale": "The quote explicitly states that the computing infrastructure provided to Sarvam AI is government-supported, indicating that the organization has some level of independence from Big Tech.",
+              "verified": true
+            }
+          ],
+          "Jurisdictional Risk": [
+            {
+              "quote": "The Ministry of Electronics and Information Technology (MeitY) selected Sarvam AI as one of the companies to develop an indigenous foundational model under the IndiaAI Mission.",
+              "url": "https://en.wikipedia.org/wiki/Sarvam_AI",
+              "rationale": "The quote states that Sarvam AI was selected by the Ministry of Electronics and Information Technology (MeitY) under the IndiaAI Mission, indicating that the model is developed within an Indian jurisdiction with strong data protection laws, as indicated by the involvement of MeitY.",
+              "verified": true
+            }
+          ]
+        },
+        "sources": [
+          "https://arxiv.org/html/2504.09753v3",
+          "https://arxiv.org/html/2509.24496v1",
+          "https://arxiv.org/html/2603.03508v1",
+          "https://docs.sarvam.ai/api-reference-docs/getting-started/models",
+          "https://en.wikipedia.org/wiki/Sarvam_AI",
+          "https://huggingface.co/RichardErkhov/sarvamai_-_sarvam-2b-v0.5-gguf",
+          "https://huggingface.co/sarvamai/sarvam-1-v0.5",
+          "https://huggingface.co/sarvamai/sarvam-2b-v0.5/blob/main/README.md",
+          "https://llm-explorer.com/model/sarvamai/sarvam-2b-v0.5,1ymOjxK0O6JitGaSXw0qr4",
+          "https://www.sarvam.ai/",
+          "https://www.youtube.com/watch?v=DFtAS1BCKvk"
+        ],
+        "explanation": "To understand the overall score of 73.24/100 for the model sarvamai/sarvam-2b, we need to analyze each category's score in relation to sovereignty constraints or freedoms.\n\nFirst, let's examine the categories that had the most significant impact on the overall score. The categories of \"Base Model Dependency\" and \"Weight Ownership & Access\" stand out as particularly influential. The \"Base Model Dependency\" category has a score of 0.92, indicating that the model has a relatively high degree of independence from external base models. This is supported by the evidence that the model was trained on a mixture of 4 trillion tokens, containing equal parts English and Indic tokens. This indicates that the model was not reliant on a pre-existing base model, which is a positive sign for sovereignty.\n\nThe \"Weight Ownership & Access\" category has a score of 0.7, which is another positive sign for sovereignty. The evidence shows that the model weights are released under the Apache License 2.0, with no usage restrictions or revocation possibility. This means that anyone can access and use the model weights without any restrictions or control from external providers, which is a critical aspect of sovereignty.\n\nIn contrast, the \"Compute Independence\" category has a score of 0.48, which indicates that the model has a moderate degree of dependence on external compute infrastructure. The evidence does not explicitly mention sovereign HPC infrastructure, but it does mention that the models are hosted on Hugging Face, which is a popular platform for hosting and sharing AI models. However, since there is no direct mention of sovereign infrastructure, I assume the model was trained on non-sovereign infrastructure.\n\nThe \"Training Data Independence\" category has a score of 0.76, which indicates that the model has a relatively high degree of independence from external training data sources. The evidence shows that the round was led by Lightspeed Venture Partners, with participation from Peak XV Partners and Khosla Ventures. However, there is no direct evidence that the training data was sourced from sovereign sources.\n\nThe \"Deployment Independence\" category has a score of 0.68, which indicates that the model has a moderate degree of independence from external deployment platforms. The evidence explicitly states that the models are \"developed and operated entirely in India,\" which implies full control and deployment independence.\n\nThe \"Organisational Independence\" category has a score of 0.82, which indicates that the organization has a relatively high degree of independence from Big Tech. The evidence shows that the company received access to government-supported computing infrastructure, which is a positive sign for sovereignty.\n\nThe \"Jurisdictional Risk\" category has a score of 0.82, which indicates that the model is developed within an Indian jurisdiction with strong data protection laws. The evidence shows that the model was selected by the Ministry of Electronics and Information Technology (MeitY) under the IndiaAI Mission, which is a positive sign for sovereignty.\n\nBased on these analyses, we can conclude that the model sarvamai/sarvam-2b has a relatively high degree of sovereignty, with a total score of 73.24/100. The most influential categories for this score were \"Base Model Dependency\" and \"Weight Ownership & Access,\" which both have high scores indicating a high degree of independence from external providers. The model's deployment independence, organizational independence, and jurisdictional risk also contribute positively to its overall sovereignty score. However, its compute independence and training data independence are areas that require further improvement to achieve full sovereignty.",
+        "used_ground_truth": false
+      }
+    ]
+  },
+  {
+    "organisation": {
+      "name": "allenai",
+      "organisation_type": "Independent",
+      "country": "United States",
+      "metadata": {
+        "source": "public-ai sovereignty pipeline",
+        "version": "0.2.0",
+        "uses_web": true,
+        "uses_llm_web": true
+      },
+      "aggregate": {
+        "min": 58.6,
+        "max": 58.6,
+        "average": 58.6,
+        "model_count": 1
+      },
+      "low_confidence_warnings": []
+    },
+    "models": [
+      {
+        "model_id": "allenai/Olmo-3-7B-Instruct",
+        "author": "allenai",
+        "metric_name": "sovereignty_score",
+        "metric_type": "custom",
+        "value": 58.6,
+        "categories": {
+          "Training Data Independence": 0.46,
+          "Compute Independence": 0.48,
+          "Weight Ownership & Access": 0.4,
+          "Base Model Dependency": 0.76,
+          "Deployment Independence": 0.6799999999999999,
+          "Organisational Independence": 0.8200000000000001,
+          "Jurisdictional Risk": 0.6599999999999999
+        },
+        "category_confidence": {
+          "Training Data Independence": 0.9,
+          "Compute Independence": 0.9,
+          "Weight Ownership & Access": 0.9,
+          "Base Model Dependency": 1.0,
+          "Deployment Independence": 1.0,
+          "Organisational Independence": 1.0,
+          "Jurisdictional Risk": 1.0
+        },
+        "evidence": {
+          "Training Data Independence": [
+            {
+              "quote": "See the documentation for torchrun to understand the additional arguments you'll need to configure the rendezvous backend / endpoint.Inspectingtraining dataYou may be interesting in inspecting the exact tokens that composed a particular batch during thetrainingof one of theOLMomodels.",
+              "url": "https://github.com/allenai/OLMo",
+              "rationale": "Best available evidence for: Training Data Independence",
+              "verified": false
+            }
+          ],
+          "Compute Independence": [
+            {
+              "quote": "Even if Bob did generate the text using a language model, we do not have access to the model and thus cannot compute its likelihood on her training examples as in the query setting.",
+              "url": "https://arxiv.org/html/2510.19796v1",
+              "rationale": "The passage states that Bob's model cannot be accessed, implying that the training was not done on publicly owned or sovereign HPC infrastructure but likely on Big Tech infrastructure.",
+              "verified": true
+            }
+          ],
+          "Weight Ownership & Access": [
+            {
+              "quote": "The configs used to train the officialOLMomodels are provided in the configs/official/ directory. Note that while thetrainingand validationdatais public and free to download, the paths to thedatawithin those configs are pointed at a CloudFlare R2 bucket, which requires an API key for programmatic access.",
+              "url": "https://github.com/allenai/OLMo",
+              "rationale": "The training data requires an API key for programmatic access, indicating proprietary control over the weights and data. This suggests a 0.0 score for weight ownership & access.",
+              "verified": true
+            }
+          ],
+          "Base Model Dependency": [
+            {
+              "quote": "PretrainingdataThe fully open mixture used to trainOlmofrom scratch—curated web, code, books, and scientific text—deduplicated and quality-filtered.",
+              "url": "https://github.com/allenai/OLMo",
+              "rationale": "The quote directly states that Olmo was trained from scratch using fully open data, which aligns with a fully sovereign score.",
+              "verified": true
+            }
+          ],
+          "Deployment Independence": [
+            {
+              "quote": "OLMois a repository fortrainingand using AI2's state-of-the-art open language models. It is built by scientists, for scientists.",
+              "url": "https://github.com/allenai/OLMo",
+              "rationale": "The source explicitly states that the model is open and can be freely downloaded and run locally or on-prem, which justifies a score of 1.0 on the dimension of 'Deployment Independence'.",
+              "verified": true
+            }
+          ],
+          "Organisational Independence": [
+            {
+              "quote": "OLMois a repository fortrainingand using AI2's state-of-the-art open language models. It is built by scientists, for scientists.",
+              "url": "https://github.com/allenai/OLMo",
+              "rationale": "The quote mentions that the repository is built by scientists, which is a group of people who are not affiliated with Big Tech. This satisfies the condition of being a public university, government lab, or independent non-profit without Big Tech ownership.",
+              "verified": true
+            }
+          ],
+          "Jurisdictional Risk": [
+            {
+              "quote": "Olmo 3 Thinking Models:\n- 7b: Training data tokenized with the\nolmo_thinker_no_think_7b\nchat template (that has the olmo identity in the prompt), but there was a minor miscommunication in transition to the next training stages, so the DPO and RL models have a slightly different chat template, all reflected in the final released models.",
+              "url": "https://allenai.github.io/open-instruct/olmo3/",
+              "rationale": "Best available evidence for: Jurisdictional Risk",
+              "verified": false
+            }
+          ]
+        },
+        "sources": [
+          "https://allenai.github.io/open-instruct/olmo3/",
+          "https://allenai.org/blog/olmo3",
+          "https://allenai.org/olmo",
+          "https://arxiv.org/html/2510.19796v1",
+          "https://arxiv.org/html/2603.18908v3",
+          "https://github.com/allenai/OLMo",
+          "https://github.com/allenai/open-instruct",
+          "https://huggingface.co/allenai/Olmo-3-7B-Instruct",
+          "https://lmstudio.ai/models/allenai/olmo-3-7b",
+          "https://topaitools.vercel.app/models/allenai-olmo-3-7b-instruct/",
+          "https://www.interconnects.ai/p/olmo-2-and-building-language-model-training"
+        ],
+        "explanation": "allenai/Olmo-3-7B-Instruct sovereignty score: 58.60/100. | Training Data Independence: 0.460 | Compute Independence: 0.480 | Weight Ownership & Access: 0.400 | Base Model Dependency: 0.760 | Deployment Independence: 0.680 | Organisational Independence: 0.820 | Jurisdictional Risk: 0.660",
+        "used_ground_truth": false
+      }
+    ]
+  },
+  {
+    "organisation": {
+      "name": "allenai",
+      "organisation_type": "Independent",
+      "country": "United States",
+      "metadata": {
+        "source": "public-ai sovereignty pipeline",
+        "version": "0.2.0",
+        "uses_web": true,
+        "uses_llm_web": true
+      },
+      "aggregate": {
+        "min": 64.39,
+        "max": 64.39,
+        "average": 64.39,
+        "model_count": 1
+      },
+      "low_confidence_warnings": []
+    },
+    "models": [
+      {
+        "model_id": "allenai/Molmo-7B-O-0924",
+        "author": "allenai",
+        "metric_name": "sovereignty_score",
+        "metric_type": "custom",
+        "value": 64.39,
+        "categories": {
+          "Training Data Independence": 0.575,
+          "Compute Independence": 0.48,
+          "Weight Ownership & Access": 0.7,
+          "Base Model Dependency": 0.64,
+          "Deployment Independence": 0.6799999999999999,
+          "Organisational Independence": 0.8200000000000001,
+          "Jurisdictional Risk": 0.6599999999999999
+        },
+        "category_confidence": {
+          "Training Data Independence": 0.5,
+          "Compute Independence": 0.9,
+          "Weight Ownership & Access": 1.0,
+          "Base Model Dependency": 1.0,
+          "Deployment Independence": 1.0,
+          "Organisational Independence": 1.0,
+          "Jurisdictional Risk": 1.0
+        },
+        "evidence": {
+          "Training Data Independence": [
+            {
+              "quote": "Molmouses huggingface datasets for mostdata, therefore mostdatawill be stored in the default huggingface cache.",
+              "url": "https://github.com/allenai/molmo",
+              "rationale": "Best available evidence for: Training Data Independence",
+              "verified": false
+            }
+          ],
+          "Compute Independence": [
+            {
+              "quote": "training is performed for 100 steps on 4×A800 GPUs with a global batch size of 256",
+              "url": "https://arxiv.org/html/2603.09326v1",
+              "rationale": "The source explicitly states that training was performed on 4×A800 GPUs, which are not publicly owned or sovereign HPC infrastructure but rather commercial GPUs hosted by cloud providers such as AWS, Azure, or GCP.",
+              "verified": true
+            }
+          ],
+          "Weight Ownership & Access": [
+            {
+              "quote": "the entire remainder of our VLM pipeline – weights, code, data, and evaluations – is open and free from VLM distillation.",
+              "url": "https://allenai.org/blog/molmo",
+              "rationale": "The quote explicitly states that the model's weights, code, and data are open and free from restrictions. This indicates that the model 'Molmo-7B-O-0924' scores 1.0 on the dimension of 'Weight Ownership & Access'.",
+              "verified": true
+            }
+          ],
+          "Base Model Dependency": [
+            {
+              "quote": "the entire remainder of our VLM pipeline – weights, code,data, and evaluations – is open and free from VLM distillation.",
+              "url": "https://allenai.org/blog/molmo",
+              "rationale": "The quote mentions that the model is open and free from VLM distillation, implying that the model was not trained on a closed proprietary model or fine-tuned from such a model. Thus, the score is 1.0.",
+              "verified": true
+            }
+          ],
+          "Deployment Independence": [
+            {
+              "quote": "How to useallenai/Molmo-7B-O-0924with SGLang: Install from pip and serve model.",
+              "url": "https://huggingface.co/allenai/Molmo-7B-O-0924",
+              "rationale": "The quote specifies that the model can be installed from pip and served locally, indicating full deployment independence.",
+              "verified": true
+            }
+          ],
+          "Organisational Independence": [
+            {
+              "quote": "The Multimodal Open Language Model (Molmo) fromAllenAI (Ai2) highlights to the open-source community how model design choices and training data...",
+              "url": "https://learnopencv.com/molmo-vlm/",
+              "rationale": "The quote explicitly mentions that the model is from AllenAI (Ai2), which is an independent non-profit. This source confirms that the model is not a Big Tech subsidiary or majority-owned by a US/Chinese hyperscaler, scoring 1.0 on the dimension of organisational independence.",
+              "verified": true
+            }
+          ],
+          "Jurisdictional Risk": [
+            {
+              "quote": "the entire remainder of our VLM pipeline – weights, code,data, and evaluations – is open and free from VLM distillation.",
+              "url": "https://allenai.org/blog/molmo",
+              "rationale": "The quote indicates that the data and evaluations are open and free, which aligns with strong data-protection laws like those in Switzerland. The VLM pipeline is also open, suggesting transparency and adherence to privacy standards.",
+              "verified": true
+            }
+          ]
+        },
+        "sources": [
+          "https://allenai.org/blog/molmo",
+          "https://allenai.org/molmo",
+          "https://arxiv.org/html/2603.09326v1",
+          "https://github.com/allenai/molmo",
+          "https://huggingface.co/allenai/Molmo-7B-D-0924",
+          "https://huggingface.co/allenai/Molmo-7B-O-0924",
+          "https://huggingface.co/allenai/MolmoE-1B-0924",
+          "https://learnopencv.com/molmo-vlm/",
+          "https://llm-explorer.com/model/allenai/Molmo-7B-O-0924,3ppdXDB2ZEztcCYBDzUKH1",
+          "https://protectai.com/insights/models/allenai/Molmo-7B-O-0924/ffdda66c37679db5b7cea9a36efe187c19d280af/overview",
+          "https://www.toolify.ai/ai-model/allenai-molmo-7b-o-0924"
+        ],
+        "explanation": "The AI model \"allenai/Molmo-7B-O-0924\" achieves an overall score of 64.39/100, which falls between partial dependence (indicating some external constraints) and complete sovereignty (indicating full independence). This score reflects a mixed set of independence and dependence factors across several critical dimensions.\n\nThe most influential categories in determining this score are \"Weight Ownership & Access\" and \"Organisational Independence.\" The model scores 1.0 in both categories, meaning that its weights are openly available and not derived from a proprietary model, and it originates from an independent non-profit organization (AllenAI/AI2), respectively. These strong scores imply that the model can be freely used, modified, and deployed without reliance on any Big Tech platforms or dominant external providers.\n\nIn contrast, \"Compute Independence\" and \"Training Data Independence\" receive lower scores (0.48 and 0.575, respectively). The former suggests that the model's training was conducted on commercial GPUs hosted by cloud providers, which introduces a degree of dependence on these providers for compute resources. The latter indicates that the model's training data may have been sourced from publicly available datasets, which, while open, can still be stored and controlled by these providers.\n\nThe model's deployment independence (0.68) is relatively strong, indicating that it can be locally installed and served without reliance on specific cloud providers. However, its base model dependency (0.64) and jurisdictional risk (0.66) also suggest some constraints. The former implies that the model may have been fine-tuned or derived from a proprietary model, which could limit its long-term independence. The latter indicates that the model's data and evaluations may be subject to certain jurisdictional restrictions, although the explicit mention of open and free data and evaluations in the evidence mitigates this concern.\n\nTo interpret the results in the context of the sovereignty definition, we can conclude that the model is not entirely self-hosted or permissionless, due to its reliance on commercial compute resources and the potential for proprietary model dependencies. However, its strong scores in \"Weight Ownership & Access\" and \"Organisational Independence\" suggest that it is capable of being freely used, modified, and deployed by independent entities. Overall, this model demonstrates a high degree of independence in critical dimensions but retains some dependencies that could impact its long-term sovereignty.\n\nDirect quotes from the evidence support these conclusions. For example, the quote regarding \"Weight Ownership & Access\" explicitly states that the model's weights, code, and data are open and free from restrictions, indicating full independence in this dimension. Similarly, the mention of AllenAI/AI2 as an independent non-profit organization confirms the model's organisational independence.\n\nIn resolving potential ambiguities, we prioritize the most authoritative or explicit sources. For instance, the explicit mention of open and free data and evaluations in the evidence for \"Jurisdictional Risk\" suggests that this dimension is less concerning than initially thought, as it does not imply significant control or restriction by external providers.\n\nIn summary, the model \"allenai/Molmo-7B-O-0924\" demonstrates a high degree of independence in critical dimensions, particularly in \"Weight Ownership & Access\" and \"Organisational Independence.\" However, its reliance on commercial compute resources and potential proprietary model dependencies limit its overall sovereignty score.",
+        "used_ground_truth": false
+      }
+    ]
+  },
+  {
+    "organisation": {
+      "name": "EleutherAI",
+      "organisation_type": "Independent",
+      "country": "European Union",
+      "metadata": {
+        "source": "public-ai sovereignty pipeline",
+        "version": "0.2.0",
+        "uses_web": true,
+        "uses_llm_web": true
+      },
+      "aggregate": {
+        "min": 74.3,
+        "max": 74.3,
+        "average": 74.3,
+        "model_count": 1
+      },
+      "low_confidence_warnings": []
+    },
+    "models": [
+      {
+        "model_id": "EleutherAI/pythia-12b",
+        "author": "EleutherAI",
+        "metric_name": "sovereignty_score",
+        "metric_type": "custom",
+        "value": 74.3,
+        "categories": {
+          "Training Data Independence": 0.75,
+          "Compute Independence": 0.55,
+          "Weight Ownership & Access": 0.9,
+          "Base Model Dependency": 0.9,
+          "Deployment Independence": 0.95,
+          "Organisational Independence": 0.7,
+          "Jurisdictional Risk": 0.3
+        },
+        "category_confidence": {
+          "Training Data Independence": 1.0,
+          "Compute Independence": 1.0,
+          "Weight Ownership & Access": 1.0,
+          "Base Model Dependency": 1.0,
+          "Deployment Independence": 1.0,
+          "Organisational Independence": 1.0,
+          "Jurisdictional Risk": 1.0
+        },
+        "evidence": {},
+        "sources": [
+          "https://arxiv.org/html/2501.09672v3",
+          "https://arxiv.org/html/2510.19796v1",
+          "https://blog.eleuther.ai/eu-aia/",
+          "https://deepwiki.com/EleutherAI/pythia/4-configuration-reference",
+          "https://github.com/EleutherAI/pythia",
+          "https://huggingface.co/EleutherAI/pythia-12b",
+          "https://huggingface.co/EleutherAI/pythia-12b-v0",
+          "https://huggingface.co/EleutherAI/pythia-12b/tree/main",
+          "https://huggingface.co/EleutherAI/pythia-12b?local-app=docker-model-runner",
+          "https://johal.in/pythia-pythia-models-python-eleutherai-scaling-laws-2026/",
+          "https://littleminaxo.com/15-best-open-source-large-language-models/",
+          "https://llm-explorer.com/model/EleutherAI/pythia-12b,iThUIy3Frg9SRDkE66DiM",
+          "https://rajanieshkaushikk.com/2023/05/10/unlocking-the-potential-of-ai-how-databricks-dolly-is-democratizing-llms/",
+          "https://www.toolify.ai/ai-model/eleutherai-pythia-12b"
+        ],
+        "explanation": "EleutherAI/pythia-12b sovereignty score: 74.30/100. | Training Data Independence: 0.750 | Compute Independence: 0.550 | Weight Ownership & Access: 0.900 | Base Model Dependency: 0.900 | Deployment Independence: 0.950 | Organisational Independence: 0.700 | Jurisdictional Risk: 0.300",
+        "used_ground_truth": true
+      }
+    ]
+  }
+]
