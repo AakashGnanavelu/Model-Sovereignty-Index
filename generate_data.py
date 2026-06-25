@@ -12,41 +12,100 @@ USE_WEB = True
 USE_LLM_WEB = True
 
 MODELS = [
-    # =========================
-    # 🌐 Big Tech / Frontier (Baseline)
-    # =========================
+    # =========================================================================
+    # 🌐 Closed Frontier Models (Big Tech, API-only)
+    # =========================================================================
     "openai/gpt-5",
-    "anthropic/claude-3-opus",
-    "google/gemini-2.0",
-    "xai/grok-1.5",
+    "openai/gpt-4o",
+    "anthropic/claude-3-5-sonnet",
+    "anthropic/claude-opus-4",
+    "google/gemini-2-5-pro",
+    "xai/grok-3",
 
-    # =========================
-    # 🇪🇺 European Sovereign AI
-    # =========================
-    "mistralai/mistral-large",
-    "mistralai/mixtral-8x22b",
-    "AlephAlpha/luminous-supreme",
-    "OpenGPT-X/Teuken-7B-instruct",
-    "LAION/leoLM-13b",
+    # =========================================================================
+    # 🇺🇸 Open-Weight Frontier Models (US Big Tech)
+    # =========================================================================
+    "meta-llama/llama-4-maverick-17b-128e-instruct",
+    "meta-llama/llama-3-70b-instruct",
+    "google/gemma-3-27b-it",
+    "microsoft/phi-4",
+
+    # =========================================================================
+    # 🇨🇳 Chinese Open-Weight Models
+    # =========================================================================
+    "deepseek-ai/deepseek-r1",
+    "deepseek-ai/deepseek-v3",
+    "Qwen/Qwen3-235B-A22B",
+    "Qwen/Qwen2-72B-Instruct",
+
+    # =========================================================================
+    # 🇪🇺 European Sovereign Models
+    # =========================================================================
+    "mistralai/Mistral-7B-v0.1",
+    "mistralai/Mixtral-8x7B-Instruct-v0.1",
+    "mistralai/Mistral-Small-3.1-24B-Instruct-2503",
+    "aleph-alpha/luminous-supreme",
+
+    # =========================================================================
+    # 🇸🇪 Sweden
+    # =========================================================================
+    "ai-sweden/gpt-sw3-126m",
     "AI-Sweden-Models/gpt-sw3-20b-instruct",
-    "swiss-ai/Apertus-8B-Instruct-2509",
 
-    # =========================
-    # 🌏 Asia Sovereign / Regional
-    # =========================
-    "qwen/Qwen2-72B-Instruct",
-    "deepseek-ai/deepseek-llm-67b-chat",
-    "01-ai/Yi-34B-Chat",
-    "baichuan-inc/Baichuan2-13B-Chat",
-    "aisingapore/Apertus-SEA-LION-v4-8B-IT",
-    "sarvamai/sarvam-2b",
+    # =========================================================================
+    # 🇨🇭 Switzerland
+    # =========================================================================
+    "swiss-ai/swissbert",
+    "swiss-ai/Apertus-70B-Instruct-2509",
 
-    # =========================
-    # 🌍 Open / Research (Non-Big Tech Control)
-    # =========================
-    "databricks/dbrx-instruct",
-    "tiiuae/falcon-180b",
-    "allenai/OLMo-7B-Instruct",
+    # =========================================================================
+    # 🇬🇧 United Kingdom
+    # =========================================================================
+    "UKEB/UK-Llama-3.1-8B-Instruct",
+
+    # =========================================================================
+    # 🇩🇪 Germany
+    # =========================================================================
+    "OpenGPT-X/Teuken-7B-instruct-commercial-v0.4",
+
+    # =========================================================================
+    # 🇪🇸 Spain
+    # =========================================================================
+    "BSC-LT/salamandra-7b-instruct",
+
+    # =========================================================================
+    # 🇸🇬 Southeast Asia / Singapore
+    # =========================================================================
+    "aisingapore/sea-lion-v1-7b",
+    "aisingapore/sea-lion-v2-8b",
+    "aisingapore/sea-lion-v3-8b-instruct",
+    "aisingapore/sea-lion-v4-8b-instruct",
+
+    # =========================================================================
+    # 🇸🇦 Saudi Arabia
+    # =========================================================================
+    "ALLaM-AI/ALLaM-3B-Instruct",
+
+    # =========================================================================
+    # 🇮🇳 India
+    # =========================================================================
+    "sarvamai/sarvam-2b-v0.5",
+
+    # =========================================================================
+    # 🇦🇪 United Arab Emirates
+    # =========================================================================
+    "tiiuae/falcon-40b",
+    "tiiuae/falcon-mamba-7b",
+
+    # =========================================================================
+    # 🏛️ Open Research / Non-Profit Models (US)
+    # =========================================================================
+    "EleutherAI/pythia-12b",
+    "EleutherAI/gpt-neox-20b",
+    "allenai/OLMo-1B",
+    "allenai/OLMo-7B-0724-Instruct",
+    "allenai/OLMo-2-1124-13B-Instruct",
+    "allenai/Molmo-7B-D",
 ]
  
 OUTPUT_PATH = os.path.join("data", "models.json")

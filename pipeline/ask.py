@@ -2,12 +2,12 @@ import os
 import time
 import requests
 
-MODEL = "swiss-ai/apertus-8b-instruct"
+MODEL = "swiss-ai/apertus-80b-instruct"
 
 def ask_publicai(
     payload=None,
     prompt=None,
-    model=None,
+    model="swiss-ai/apertus-8b-instruct",
     user_agent=None,
     api_key=None,
     timeout=30,
@@ -24,9 +24,6 @@ def ask_publicai(
         api_key = os.getenv("PUBLICAI_KEY")
         if not api_key:
             raise ValueError("API key not provided and PUBLICAI_KEY not set.")
-
-    if model is None:
-        model = MODEL
 
     url = "https://api.publicai.co/v1/chat/completions"
 

@@ -19,32 +19,24 @@ OrganisationSovereigntyScore
 Dimensions (7 categories)
 --------------------------
 1. Training Data Independence
-   Is the training data self-owned or open-licensed, or does it flow through
-   Big Tech pipelines (e.g. Common Crawl filtered via AWS)?
-
 2. Compute Independence
-   Was the model trained on sovereign / public-institution infrastructure,
-   or on Azure / AWS / GCP?
-
 3. Weight Ownership & Access
-   Who legally controls the weights? Can a US or Chinese company revoke access?
-
 4. Base Model Dependency
-   Trained from scratch, or fine-tuned from a proprietary or foreign model?
-
 5. Deployment Independence
-   Can the model be run locally / on-prem, or is it API-only behind a
-   corporate wall?
-
 6. Organisational Independence
-   Is the organisation a public institution, non-profit, or independent
-   researcher? Or VC-backed / Big Tech?
-
 7. Jurisdictional Risk
-   Where is the organisation legally domiciled, and does US CLOUD Act or
-   Chinese cybersecurity law apply to the weights?
 
 Score: 0–100. Higher = more sovereign (less dependent on Big Tech).
+
+Improvement strategies implemented
+-----------------------------------
+1. Ground-truth fuzzy matching     — org-level inherit + family/version normalisation
+2. Richer HF metadata extraction   — README compute/data mining, datasets field,
+                                     siblings (GGUF/ONNX), Spaces, param count
+3. Dimension-specific web queries  — 7 targeted searches, one per dimension,
+                                     confidence-gated (only fired when HF conf < threshold)
+4. Confidence-gated escalation     — per-dimension web escalation; avoids paying
+                                     for web calls on dimensions already well-scored
 """
 
 from __future__ import annotations
@@ -56,7 +48,6 @@ import sys
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Optional
-from functools import lru_cache
 
 import requests
 
@@ -98,12 +89,26 @@ DEFAULT_WEIGHTS: dict[str, float] = {
 assert abs(sum(DEFAULT_WEIGHTS.values()) - 1.0) < 1e-9, "Weights must sum to 1."
 
 # ---------------------------------------------------------------------------
+# Confidence threshold for Strategy 4: confidence-gated web escalation.
+# Dimensions whose HF-heuristic confidence is below this value will trigger
+# a targeted web search rather than keeping the uncertain HF score.
+# ---------------------------------------------------------------------------
+
+WEB_ESCALATION_THRESHOLD: float = 0.45
+
+# ---------------------------------------------------------------------------
+# Dimensions that are stable *across all models* from the same organisation.
+# Used by Strategy 1 (org-level inherit from ground truth).
+# ---------------------------------------------------------------------------
+
+ORG_STABLE_DIMENSIONS: set[str] = {
+    "Jurisdictional Risk",
+    "Organisational Independence",
+    "Compute Independence",      # usually the same infra per org
+}
+
+# ---------------------------------------------------------------------------
 # Ground-truth table
-#
-# Entries are manually curated for well-known models where web evidence is
-# unreliable or missing.  Values are floats in [0, 1] per category.
-# A model present here bypasses HF heuristics for the covered categories.
-# "confidence" is set to 1.0 for ground-truth entries.
 # ---------------------------------------------------------------------------
 
 GROUND_TRUTH: dict[str, dict[str, float]] = {
@@ -112,7 +117,7 @@ GROUND_TRUTH: dict[str, dict[str, float]] = {
         "Training Data Independence":  0.05,
         "Compute Independence":        0.05,
         "Weight Ownership & Access":   0.05,
-        "Base Model Dependency":       0.90,  # self-developed but closed
+        "Base Model Dependency":       0.90,
         "Deployment Independence":     0.02,
         "Organisational Independence": 0.10,
         "Jurisdictional Risk":         0.05,
@@ -162,11 +167,11 @@ GROUND_TRUTH: dict[str, dict[str, float]] = {
         "Organisational Independence": 0.05,
         "Jurisdictional Risk":         0.05,
     },
-    # ── Meta open-weight (strong base, US jurisdiction) ──────────────────────
+    # ── Meta open-weight ─────────────────────────────────────────────────────
     "meta-llama/llama-3-70b-instruct": {
         "Training Data Independence":  0.30,
         "Compute Independence":        0.10,
-        "Weight Ownership & Access":   0.45,  # open weights but Meta licence
+        "Weight Ownership & Access":   0.45,
         "Base Model Dependency":       0.80,
         "Deployment Independence":     0.80,
         "Organisational Independence": 0.20,
@@ -181,7 +186,7 @@ GROUND_TRUTH: dict[str, dict[str, float]] = {
         "Organisational Independence": 0.20,
         "Jurisdictional Risk":         0.15,
     },
-    # ── Mistral (France, independent) ────────────────────────────────────────
+    # ── Mistral (France) ─────────────────────────────────────────────────────
     "mistralai/mistral-7b-v0.1": {
         "Training Data Independence":  0.50,
         "Compute Independence":        0.50,
@@ -200,7 +205,7 @@ GROUND_TRUTH: dict[str, dict[str, float]] = {
         "Organisational Independence": 0.70,
         "Jurisdictional Risk":         0.75,
     },
-    # ── EleutherAI / Pythia (US non-profit, open) ────────────────────────────
+    # ── EleutherAI / Pythia ──────────────────────────────────────────────────
     "eleutherai/pythia-12b": {
         "Training Data Independence":  0.75,
         "Compute Independence":        0.55,
@@ -210,7 +215,7 @@ GROUND_TRUTH: dict[str, dict[str, float]] = {
         "Organisational Independence": 0.70,
         "Jurisdictional Risk":         0.30,
     },
-    # ── Falcon / TII (UAE, state-backed) ─────────────────────────────────────
+    # ── Falcon / TII (UAE) ───────────────────────────────────────────────────
     "tiiuae/falcon-40b": {
         "Training Data Independence":  0.60,
         "Compute Independence":        0.65,
@@ -220,7 +225,7 @@ GROUND_TRUTH: dict[str, dict[str, float]] = {
         "Organisational Independence": 0.70,
         "Jurisdictional Risk":         0.60,
     },
-    # ── Swiss-AI / EPFL (sovereign exemplar) ─────────────────────────────────
+    # ── Swiss-AI / EPFL ──────────────────────────────────────────────────────
     "swiss-ai/swissbert": {
         "Training Data Independence":  0.90,
         "Compute Independence":        0.90,
@@ -261,8 +266,77 @@ GROUND_TRUTH: dict[str, dict[str, float]] = {
     },
 }
 
-# Normalise ground-truth keys to lowercase for lookup
 GROUND_TRUTH = {k.lower(): v for k, v in GROUND_TRUTH.items()}
+
+# ---------------------------------------------------------------------------
+# Strategy 1 helpers: org-level index and version-normalisation regex
+# ---------------------------------------------------------------------------
+
+# Pre-built: maps org slug → list of GT entries for that org.
+# Built once at import time from GROUND_TRUTH.
+_GT_BY_ORG: dict[str, list[dict[str, float]]] = {}
+for _gt_key, _gt_scores in GROUND_TRUTH.items():
+    _org_slug = _gt_key.split("/")[0] if "/" in _gt_key else _gt_key
+    _GT_BY_ORG.setdefault(_org_slug, []).append(_gt_scores)
+
+# Suffixes to strip when normalising model IDs for family matching.
+_VERSION_STRIP_RE = re.compile(
+    r"[-_](?:"
+    r"v\d+(?:[._]\d+)*"          # v0.1, v2, v0.1.0
+    r"|instruct|chat|hf"         # common suffixes
+    r"|it|rlhf|sft|dpo"
+    r"|\d+b|\d+x\d+b"            # size suffixes: 7b, 8x7b
+    r"|preview|rc\d*|alpha|beta"
+    r")",
+    re.IGNORECASE,
+)
+
+
+def _normalise_model_id(model_id: str) -> str:
+    """Strip version/size/instruction suffixes for family matching."""
+    low = model_id.lower()
+    return _VERSION_STRIP_RE.sub("", low).rstrip("-_")
+
+
+def _gt_family_lookup(model_id: str) -> Optional[dict[str, float]]:
+    """
+    Strategy 1a — exact or family match against GROUND_TRUTH.
+
+    Returns (scores_dict, confidence_multiplier).
+    Exact match → 1.0. Family/normalised match → 0.85.
+    Returns None if no match.
+    """
+    low = model_id.lower()
+    if low in GROUND_TRUTH:
+        return GROUND_TRUTH[low], 1.0
+
+    normalised = _normalise_model_id(low)
+    for gt_key in GROUND_TRUTH:
+        if _normalise_model_id(gt_key) == normalised:
+            return GROUND_TRUTH[gt_key], 0.85
+
+    return None, None
+
+
+def _gt_org_inherit(model_id: str) -> Optional[dict[str, float]]:
+    """
+    Strategy 1b — org-level inherit for ORG_STABLE_DIMENSIONS.
+
+    If no family match exists but the org is in the ground truth, return a
+    partial dict covering only ORG_STABLE_DIMENSIONS (averaged across all
+    GT entries for that org).  Returns None if org is unknown.
+    """
+    org = model_id.lower().split("/")[0] if "/" in model_id else ""
+    entries = _GT_BY_ORG.get(org)
+    if not entries:
+        return None
+    partial: dict[str, float] = {}
+    for dim in ORG_STABLE_DIMENSIONS:
+        vals = [e[dim] for e in entries if dim in e]
+        if vals:
+            partial[dim] = sum(vals) / len(vals)
+    return partial if partial else None
+
 
 # ---------------------------------------------------------------------------
 # Known open / permissive licences
@@ -274,11 +348,10 @@ OPEN_LICENSES: set[str] = {
     "openrail", "openrail++", "bigscience-openrail-m",
     "afl-3.0", "artistic-2.0",
     "gpl-2.0", "gpl-3.0", "lgpl-2.1", "lgpl-3.0",
-    "llama2", "llama3",                        # open-weight Meta licences
+    "llama2", "llama3",
     "cc0-1.0", "wtfpl", "unlicense",
 }
 
-# Licences that are open-weight but carry usage/commercial restrictions
 RESTRICTED_OPEN_LICENSES: set[str] = {
     "llama2", "llama3", "cc-by-nc-4.0", "cc-by-nc-sa-4.0",
     "gemma", "microsoft-research-license",
@@ -286,11 +359,9 @@ RESTRICTED_OPEN_LICENSES: set[str] = {
 
 # ---------------------------------------------------------------------------
 # Jurisdiction tiers
-# (higher = less jurisdictional risk to sovereignty)
 # ---------------------------------------------------------------------------
 
 JURISDICTION_SCORE: dict[str, float] = {
-    # Tier 1: strong data-protection, no CLOUD-Act equivalent
     "Switzerland":      0.97,
     "Norway":           0.93,
     "Iceland":          0.93,
@@ -307,16 +378,12 @@ JURISDICTION_SCORE: dict[str, float] = {
     "Italy":            0.78,
     "Portugal":         0.78,
     "Poland":           0.75,
-    # Tier 2: Five Eyes — subject to intelligence-sharing / CLOUD Act
     "United Kingdom":   0.55,
     "Canada":           0.50,
     "Australia":        0.48,
     "New Zealand":      0.48,
-    # Tier 3: US hyperscaler home jurisdiction
     "United States":    0.15,
-    # Tier 4: Chinese cybersecurity law / state access
     "China":            0.10,
-    # Tier 5: other / uncertain
     "United Arab Emirates": 0.55,
     "Saudi Arabia":     0.45,
     "Israel":           0.60,
@@ -326,7 +393,7 @@ JURISDICTION_SCORE: dict[str, float] = {
     "India":            0.55,
     "Russia":           0.10,
     "Taiwan":           0.65,
-    "–":                0.40,   # unknown
+    "–":                0.40,
 }
 
 # ---------------------------------------------------------------------------
@@ -334,18 +401,15 @@ JURISDICTION_SCORE: dict[str, float] = {
 # ---------------------------------------------------------------------------
 
 COUNTRY_KEYWORDS: dict[str, str] = {
-    # Switzerland
     "swiss-ai": "Switzerland", "swiss_ai": "Switzerland",
     "swiss": "Switzerland", "switzerland": "Switzerland",
     "epfl": "Switzerland", "eth zurich": "Switzerland",
     "eth zürich": "Switzerland", "cscs": "Switzerland",
     "swisstxt": "Switzerland",
-    # Nordic
     "ai-sweden": "Sweden", "ai sweden": "Sweden", "ai-sweden-models": "Sweden",
     "sweden": "Sweden",
     "finland": "Finland", "norway": "Norway", "denmark": "Denmark",
     "iceland": "Iceland",
-    # EU
     "mistral": "France", "mistralai": "France", "lighton": "France", "france": "France",
     "huggingface": "France",
     "aleph alpha": "Germany", "alephalpha": "Germany", "germany": "Germany",
@@ -354,13 +418,11 @@ COUNTRY_KEYWORDS: dict[str, str] = {
     "bsc-lt": "Spain", "spain": "Spain",
     "italy": "Italy", "portugal": "Portugal",
     "belgium": "Belgium", "netherlands": "Netherlands",
-    # UK
     "stability": "United Kingdom", "stabilityai": "United Kingdom",
     "deepmind": "United Kingdom", "uk": "United Kingdom",
     "united kingdom": "United Kingdom", "britain": "United Kingdom",
     "ucl": "United Kingdom", "oxford": "United Kingdom",
     "cambridge": "United Kingdom",
-    # US
     "openai": "United States", "anthropic": "United States",
     "meta": "United States", "google": "United States",
     "microsoft": "United States", "amazon": "United States",
@@ -368,26 +430,22 @@ COUNTRY_KEYWORDS: dict[str, str] = {
     "allenai": "United States", "eleutherai": "United States",
     "xai": "United States", "x.ai": "United States",
     "cohere": "United States",
-    # China
     "deepseek": "China", "qwen": "China", "alibaba": "China",
     "baidu": "China", "ernie": "China", "pangu": "China",
     "huawei": "China", "zhipu": "China", "chatglm": "China",
     "giga-llm": "China", "01-ai": "China", "yi-": "China",
     "moonshot": "China", "minimax": "China",
-    # Middle East
     "falcon": "United Arab Emirates", "tiiuae": "United Arab Emirates",
     "tii": "United Arab Emirates",
     "technology innovation institute": "United Arab Emirates",
     "mbzuai": "United Arab Emirates",
     "allam": "Saudi Arabia", "sdaia": "Saudi Arabia",
-    # APAC
     "naver": "South Korea", "hyperclova": "South Korea",
     "kakao": "South Korea", "skt": "South Korea",
     "sarvam": "India", "ai4bharat": "India", "india": "India",
     "riken": "Japan", "fugaku": "Japan", "jaist": "Japan",
     "aisingapore": "Singapore", "ai singapore": "Singapore",
     "singapore": "Singapore", "sea-lion": "Singapore", "sea lion": "Singapore",
-    # Other
     "dicta-il": "Israel", "israel": "Israel",
     "gigachat": "Russia", "yandex": "Russia", "yalm": "Russia",
     "taide": "Taiwan", "narlabs": "Taiwan",
@@ -403,10 +461,6 @@ TLD_COUNTRY_MAP: dict[str, str] = {
     ".in": "India", ".il": "Israel", ".ae": "United Arab Emirates",
     ".ru": "Russia", ".tw": "Taiwan", ".kr": "South Korea",
 }
-
-# ---------------------------------------------------------------------------
-# Big Tech markers (used for Organisational Independence scoring)
-# ---------------------------------------------------------------------------
 
 BIG_TECH_ORGS: set[str] = {
     "openai", "google", "deepmind", "alphabet", "microsoft", "azure",
@@ -424,15 +478,9 @@ PUBLIC_INSTITUTION_HINTS: list[str] = [
     "fraunhofer", "helmholtz", "max planck",
 ]
 
-# ---------------------------------------------------------------------------
-# Known cloud compute providers (for Compute Independence heuristics)
-# ---------------------------------------------------------------------------
-
 CLOUD_PROVIDERS: set[str] = {
     "azure", "aws", "amazon", "google cloud", "gcp",
-    "lambda labs",  # US cloud
-    "coreweave",    # US cloud
-    "oracle cloud",
+    "lambda labs", "coreweave", "oracle cloud",
 }
 
 SOVEREIGN_COMPUTE_HINTS: list[str] = [
@@ -445,8 +493,69 @@ SOVEREIGN_COMPUTE_HINTS: list[str] = [
 ]
 
 # ---------------------------------------------------------------------------
-# Keywords for LLM prompt / heuristic extraction per category
+# Strategy 2: additional README/metadata signals
 # ---------------------------------------------------------------------------
+
+# File extensions that indicate the model can be run locally without the
+# original framework — strong signal for Deployment Independence.
+LOCAL_RUN_EXTENSIONS: set[str] = {
+    "gguf", "ggml", "onnx", "bin", "pt", "safetensors",
+}
+
+# Sibling filename patterns that strongly imply local runnability.
+LOCAL_RUN_PATTERNS: list[str] = [
+    r"\.gguf$", r"\.ggml$", r"\.onnx$",
+    r"quantiz", r"q4_", r"q8_", r"llama\.cpp",
+]
+
+# Known open HF dataset orgs — used to score Training Data Independence
+# when the card's `datasets:` field references them.
+OPEN_DATASET_ORGS: set[str] = {
+    "allenai", "huggingface", "EleutherAI", "bigscience",
+    "cc100", "oscar-corpus", "wikipedia", "common_voice",
+    "openassistant", "lmsys", "databricks", "togethercomputer",
+    "tiiuae",                  # Falcon's RefinedWeb is open
+}
+
+PROPRIETARY_DATASET_HINTS: list[str] = [
+    "proprietary", "internal", "private", "closed", "undisclosed",
+    "not disclosed", "confidential",
+]
+
+# ---------------------------------------------------------------------------
+# Strategy 3: per-dimension web query templates
+# ---------------------------------------------------------------------------
+
+DIMENSION_QUERIES: dict[str, list[str]] = {
+    "Training Data Independence": [
+        '"{model}" training data dataset sources',
+        '"{org}" training corpus open data',
+    ],
+    "Compute Independence": [
+        '"{model}" trained on supercomputer HPC cluster',
+        '"{model}" trained AWS Azure GCP cloud compute',
+    ],
+    "Weight Ownership & Access": [
+        '"{model}" model weights license access download',
+        '"{model}" open weights revoke terms',
+    ],
+    "Base Model Dependency": [
+        '"{model}" base model fine-tune pretrained from',
+        '"{model}" trained from scratch pretraining',
+    ],
+    "Deployment Independence": [
+        '"{model}" run locally self-host on-prem deploy',
+        '"{model}" API only hosted inference',
+    ],
+    "Organisational Independence": [
+        '"{org}" nonprofit university venture capital funding',
+        '"{org}" organisation type public institution',
+    ],
+    "Jurisdictional Risk": [
+        '"{org}" headquarters country incorporated domicile',
+        '"{org}" legal entity jurisdiction',
+    ],
+}
 
 CATEGORY_KEYWORDS: dict[str, list[str]] = {
     "Training Data Independence": [
@@ -489,40 +598,33 @@ CATEGORY_KEYWORDS: dict[str, list[str]] = {
 CATEGORY_DESCRIPTION = {
     "Training Data Independence": (
         "Measures the degree to which the model's training data is open, transparent, "
-        "and not dependent on proprietary or restricted datasets. High independence means "
-        "training data sources are public, auditable, and not dominated by big tech or closed data."
+        "and not dependent on proprietary or restricted datasets."
     ),
     "Compute Independence": (
-        "Assesses whether the model was trained and can be run using independent, sovereign, or publicly accessible compute infrastructure. "
-        "High scores indicate use of national, academic, or independently controlled compute, not reliant on US hyperscalers or third-party cloud monopolies."
+        "Assesses whether the model was trained and can be run using independent, sovereign, "
+        "or publicly accessible compute infrastructure."
     ),
     "Weight Ownership & Access": (
-        "Indicates whether the model weights are owned and controlled by an independent entity, "
-        "and whether the weights are publicly released under an open license, allowing free use and distribution."
+        "Indicates whether the model weights are owned and controlled by an independent entity "
+        "and released under an open licence."
     ),
     "Base Model Dependency": (
-        "Evaluates the extent to which the model depends on proprietary, closed, or big tech base models, "
-        "vs being trained from scratch or on other open, independent models."
+        "Evaluates the extent to which the model depends on proprietary, closed, or big tech "
+        "base models vs being trained from scratch."
     ),
     "Deployment Independence": (
-        "Reflects the ability to deploy and operate the model in any environment, including on-premises or public infrastructure, "
-        "without restrictions such as API-only access, licensing barriers, or hardware dependencies controlled by third parties."
+        "Reflects the ability to deploy and operate the model in any environment, including "
+        "on-premises, without API-only or licensing restrictions."
     ),
     "Organisational Independence": (
-        "Scores the independence of the developing organisation, considering factors such as lack of big tech or foreign government control, "
-        "public or academic oversight, or independent funding/ownership."
+        "Scores the independence of the developing organisation from big tech or foreign "
+        "government control."
     ),
     "Jurisdictional Risk": (
-        "Assesses the legal and regulatory exposure of the organisation or model to high-risk jurisdictions, "
-        "such as those covered by foreign data access laws or extraterritorial governance (e.g. US CLOUD Act). "
-        "Lower risk comes from operating under transparent, democratic, and privacy-respecting jurisdictions."
+        "Assesses the legal and regulatory exposure of the organisation to high-risk "
+        "jurisdictions such as those covered by the US CLOUD Act."
     ),
 }
-
-
-# ---------------------------------------------------------------------------
-# Boilerplate filter
-# ---------------------------------------------------------------------------
 
 BOILERPLATE_PATTERNS: list[str] = [
     r"click here", r"press here", r"learn more", r"read more",
@@ -563,7 +665,6 @@ def _is_relevant(text: str, category: str) -> bool:
 
 
 def _score_sentence(text: str, category: str) -> int:
-    """Heuristic sentence relevance score."""
     score = 0
     t = text.lower()
     keywords = CATEGORY_KEYWORDS.get(category, [])
@@ -602,7 +703,6 @@ def _extract_valid_json(text: str) -> Optional[Any]:
 
 
 def _infer_country_from_url(url: str) -> Optional[str]:
-    """Infer country from a URL hostname TLD (e.g. .se → Sweden)."""
     if not url or not isinstance(url, str):
         return None
     url = url.strip().lower()
@@ -632,14 +732,6 @@ def _get_hf_org(org: str) -> Optional[dict]:
 
 
 def _verify_quote(quote: str, docs: list[dict]) -> Optional[str]:
-    """
-    Verify that *quote* is a genuine substring of one of the scraped documents.
-    Returns the URL of the first matching document, or None if not found.
-
-    Uses a sliding window of 30 characters for robustness against minor
-    whitespace/encoding differences, which is substantially stronger than
-    the previous 20-char check.
-    """
     if not quote or len(quote) < 20:
         return None
     qn = _normalize(quote)
@@ -649,6 +741,127 @@ def _verify_quote(quote: str, docs: list[dict]) -> Optional[str]:
         if window in blob:
             return doc.get("url", "")
     return None
+
+
+# ---------------------------------------------------------------------------
+# Strategy 2: README/metadata mining helpers
+# ---------------------------------------------------------------------------
+
+def _extract_param_count(hf_model: dict) -> Optional[int]:
+    """
+    Try to extract parameter count (as int) from HF metadata.
+    Sources: safetensors metadata, tags like '7b', model_id.
+    """
+    # 1. Safetensors metadata
+    st = hf_model.get("safetensors") or {}
+    total = st.get("total")
+    if isinstance(total, int) and total > 0:
+        return total
+
+    # 2. Tags like '7b', '13b', '70b', '0.5b'
+    tags = [t.lower() for t in (hf_model.get("tags") or [])]
+    model_id = (hf_model.get("id") or "").lower()
+    for candidate in tags + [model_id]:
+        m = re.search(r"(\d+(?:\.\d+)?)b(?:\b|_|-)", candidate)
+        if m:
+            try:
+                return int(float(m.group(1)) * 1_000_000_000)
+            except ValueError:
+                pass
+    return None
+
+
+def _has_local_run_siblings(hf_model: dict) -> bool:
+    """
+    Return True if the model has sibling files (GGUF, ONNX, etc.) that imply
+    it can be run locally without the original framework.
+    """
+    siblings = hf_model.get("siblings") or []
+    for s in siblings:
+        fname = (s.get("rfilename") or "").lower()
+        if any(re.search(pat, fname) for pat in LOCAL_RUN_PATTERNS):
+            return True
+    return False
+
+
+def _has_spaces(hf_model: dict) -> bool:
+    """Return True if the model card links to any Hugging Face Spaces."""
+    spaces = hf_model.get("spaces") or []
+    return bool(spaces)
+
+
+def _score_datasets_field(card_data: dict) -> Optional[float]:
+    """
+    Inspect the `datasets:` field of the model card.
+    Returns a float [0,1] for Training Data Independence, or None if absent.
+    """
+    datasets = card_data.get("datasets") or []
+    if isinstance(datasets, str):
+        datasets = [datasets]
+    if not datasets:
+        return None
+
+    open_count = 0
+    closed_count = 0
+    for ds in datasets:
+        ds_lower = str(ds).lower()
+        if any(hint in ds_lower for hint in PROPRIETARY_DATASET_HINTS):
+            closed_count += 1
+        elif any(org.lower() in ds_lower for org in OPEN_DATASET_ORGS):
+            open_count += 1
+        else:
+            # Unknown: treat as mildly open (benefit of the doubt)
+            open_count += 0.5
+    total = open_count + closed_count
+    if total == 0:
+        return None
+    return min(1.0, open_count / total)
+
+
+def _score_readme_compute(readme: str) -> Optional[tuple[float, float]]:
+    """
+    Scan the README for compute hints.
+    Returns (score, confidence) or None if no signal found.
+    """
+    if not readme:
+        return None
+    t = readme.lower()
+    sovereign_hits = sum(1 for h in SOVEREIGN_COMPUTE_HINTS if h in t)
+    cloud_hits = sum(1 for h in CLOUD_PROVIDERS if h in t)
+
+    if sovereign_hits == 0 and cloud_hits == 0:
+        return None
+    if sovereign_hits > 0 and cloud_hits == 0:
+        return (min(1.0, 0.70 + 0.05 * sovereign_hits), min(0.85, 0.60 + 0.05 * sovereign_hits))
+    if cloud_hits > 0 and sovereign_hits == 0:
+        return (max(0.05, 0.25 - 0.05 * cloud_hits), min(0.85, 0.65 + 0.05 * cloud_hits))
+    # Mixed: lean toward cloud (more conservative / lower sovereignty)
+    return (0.35, 0.50)
+
+
+def _score_readme_data(readme: str) -> Optional[tuple[float, float]]:
+    """
+    Scan the README for training-data transparency signals.
+    Returns (score, confidence) or None.
+    """
+    if not readme:
+        return None
+    t = readme.lower()
+    positive = [
+        "open data", "public domain", "creative commons",
+        "openly licensed", "cc-by", "cc0",
+        "data card", "data sheet", "data transparency",
+    ]
+    negative = PROPRIETARY_DATASET_HINTS
+    pos = sum(1 for p in positive if p in t)
+    neg = sum(1 for n in negative if n in t)
+    if pos == 0 and neg == 0:
+        return None
+    if pos > neg:
+        return (min(0.90, 0.55 + 0.08 * pos), min(0.75, 0.45 + 0.06 * pos))
+    if neg > pos:
+        return (max(0.10, 0.45 - 0.10 * neg), min(0.75, 0.50 + 0.05 * neg))
+    return (0.50, 0.40)
 
 
 # ---------------------------------------------------------------------------
@@ -662,24 +875,25 @@ class ModelSovereigntyScore:
 
     Parameters
     ----------
-    model_id:
-        Hugging Face model identifier, e.g. ``"mistralai/Mistral-7B-v0.1"``.
-    organisation:
-        Parent :class:`OrganisationSovereigntyScore`.
-    weights:
-        Per-category weights (must sum to 1). Defaults to DEFAULT_WEIGHTS.
-    verbose:
-        When ``True``, print coloured, human-readable progress to the terminal
-        (blue for operational detail, white for milestones, red for errors).
-        When ``False`` (default), logging is suppressed; exceptions still propagate.
+    model_id : str
+        Hugging Face model identifier.
+    organisation : OrganisationSovereigntyScore
+        Parent organisation object.
+    weights : dict
+        Per-category weights (must sum to 1).
+    verbose : bool
+        Print coloured progress to the terminal.
+    web_escalation_threshold : float
+        Dimensions with HF-heuristic confidence below this value will be
+        escalated to targeted web search (Strategy 4).
     """
 
     model_id: str
     organisation: "OrganisationSovereigntyScore"
     weights: dict[str, float] = field(default_factory=lambda: dict(DEFAULT_WEIGHTS))
     verbose: bool = False
+    web_escalation_threshold: float = WEB_ESCALATION_THRESHOLD
 
-    # Populated by evaluate() / score_from_hf_dict()
     overall_score: Optional[float] = field(default=None, init=False)
     category_scores: dict[str, float] = field(default_factory=dict, init=False)
     category_confidence: dict[str, float] = field(default_factory=dict, init=False)
@@ -687,44 +901,27 @@ class ModelSovereigntyScore:
     sources: list[str] = field(default_factory=list, init=False)
     explanation: Optional[str] = field(default=None, init=False)
     used_ground_truth: bool = field(default=False, init=False)
+    gt_match_type: Optional[str] = field(default=None, init=False)  # 'exact'|'family'|'org_inherit'
 
     _hf_model: Optional[dict] = field(default=None, init=False, repr=False)
 
-    # ------------------------------------------------------------------
-    # Logging (ANSI colours when verbose=True)
-    # ------------------------------------------------------------------
-
     _LOG_RESET = "\033[0m"
-    _LOG_RED = "\033[91m"
-    _LOG_BLUE = "\033[94m"
+    _LOG_RED   = "\033[91m"
+    _LOG_BLUE  = "\033[94m"
     _LOG_WHITE = "\033[97m"
 
     def _log(self, message: str, *, method: str) -> None:
-        """Blue [INFO] lines for operational detail."""
         if self.verbose:
-            print(
-                f"{self._LOG_BLUE}[INFO] ModelSovereigntyScore.{method}: "
-                f"{message}{self._LOG_RESET}",
-                flush=True,
-            )
+            print(f"{self._LOG_BLUE}[INFO] ModelSovereigntyScore.{method}: {message}{self._LOG_RESET}", flush=True)
 
     def _log_general(self, message: str, *, method: str) -> None:
-        """White lines for high-level progress milestones."""
         if self.verbose:
-            print(
-                f"{self._LOG_WHITE}ModelSovereigntyScore.{method}: "
-                f"{message}{self._LOG_RESET}",
-                flush=True,
-            )
+            print(f"{self._LOG_WHITE}ModelSovereigntyScore.{method}: {message}{self._LOG_RESET}", flush=True)
 
     def _log_error(self, method: str, exc: BaseException, *, context: Optional[dict] = None) -> None:
-        """Red [ERROR] block with full, untruncated context."""
         if not self.verbose:
             return
-        lines = [
-            f"[ERROR] ModelSovereigntyScore.{method}",
-            f"Model: {self.model_id}",
-        ]
+        lines = [f"[ERROR] ModelSovereigntyScore.{method}", f"Model: {self.model_id}"]
         if context:
             for k, v in context.items():
                 lines.append(f"{k}: {v}")
@@ -742,11 +939,6 @@ class ModelSovereigntyScore:
         use_llm_web: bool = False,
         verbose: bool = False,
     ) -> "ModelSovereigntyScore":
-        """
-        Fetch HF metadata, optionally gather web evidence, compute score.
-
-        Returns self for method chaining.
-        """
         self.verbose = verbose
         method = "evaluate"
         self._log_general(
@@ -754,13 +946,11 @@ class ModelSovereigntyScore:
             f"use_web={use_web}, use_llm_web={use_llm_web})",
             method=method,
         )
-
         if not _PIPELINE_AVAILABLE:
             raise RuntimeError(
                 "pipeline package is not installed. "
                 "Use score_from_hf_dict() with pre-fetched metadata."
             )
-
         try:
             self._log("Fetching Hugging Face model metadata", method=method)
             self._hf_model = fetch_huggingface_model(self.model_id)
@@ -768,8 +958,24 @@ class ModelSovereigntyScore:
             self._log_error(method, exc)
             raise
 
+        # NOTE on fetch strategy (bugfix — previously this caused up to 3x
+        # redundant web collection):
+        #
+        # When use_llm_web=True, _compute_and_store() runs its own targeted,
+        # per-dimension fetches via _fetch_dimension_docs() (Strategy 3), and
+        # those targeted fetches are almost always non-empty — meaning the
+        # generic fetch_web_evidence() call below was being made up front,
+        # then thrown away unused, while two more fetch passes happened
+        # downstream (the per-dimension loop, and a separate jurisdiction
+        # fetch). We now only do the generic, single-query fetch here when
+        # use_llm_web is False (i.e. when the cheap heuristic web-adjustment
+        # path in _compute_and_store will actually consume web_docs). When
+        # use_llm_web is True, web_docs stays empty and all web collection is
+        # delegated to the single confidence-gated pass inside
+        # _compute_and_store, which fetches each under-confident dimension
+        # exactly once.
         web_docs: list[dict] = []
-        if use_web:
+        if use_web and not use_llm_web:
             try:
                 self._log(f"Fetching web evidence for '{self.model_id}'", method=method)
                 web_docs = fetch_web_evidence(
@@ -807,9 +1013,6 @@ class ModelSovereigntyScore:
         web_docs: Optional[list[dict]] = None,
         use_llm_web: bool = False,
     ) -> "ModelSovereigntyScore":
-        """
-        Score from a pre-fetched HF metadata dict (useful for testing).
-        """
         self._hf_model = hf_model
         if web_docs:
             self.sources = sorted({d.get("url") for d in web_docs if d.get("url")})
@@ -821,7 +1024,6 @@ class ModelSovereigntyScore:
         return self
 
     def generate_explanation(self, user_agent: str = "Sovereignty-Pipeline/1.0") -> str:
-        """Generate a human-readable explanation and store in self.explanation."""
         try:
             self.explanation = self._explain_score(user_agent=user_agent)
         except Exception as exc:
@@ -831,17 +1033,18 @@ class ModelSovereigntyScore:
 
     def to_dict(self) -> dict:
         return {
-            "model_id": self.model_id,
-            "author": self.organisation.name,
-            "metric_name": "sovereignty_score",
-            "metric_type": "custom",
-            "value": self.overall_score,
-            "categories": self.category_scores,
-            "category_confidence": self.category_confidence,
-            "evidence": self.evidence,
-            "sources": self.sources,
-            "explanation": self.explanation,
-            "used_ground_truth": self.used_ground_truth,
+            "model_id":             self.model_id,
+            "author":               self.organisation.name,
+            "metric_name":          "sovereignty_score",
+            "metric_type":          "custom",
+            "value":                self.overall_score,
+            "categories":           self.category_scores,
+            "category_confidence":  self.category_confidence,
+            "evidence":             self.evidence,
+            "sources":              self.sources,
+            "explanation":          self.explanation,
+            "used_ground_truth":    self.used_ground_truth,
+            "gt_match_type":        self.gt_match_type,
         }
 
     # ------------------------------------------------------------------
@@ -854,46 +1057,85 @@ class ModelSovereigntyScore:
         web_docs: Optional[list[dict]],
         use_llm_web: bool,
     ) -> None:
-        """Compute scores and write to instance fields."""
         method = "_compute_and_store"
         self._log_general(f"Computing sovereignty score for '{self.model_id}'", method=method)
 
-        # 1. Check ground-truth table first
-        gt_key = self.model_id.lower()
-        if gt_key in GROUND_TRUTH:
-            self._log(f"Using ground-truth scores for '{self.model_id}'", method=method)
-            gt = GROUND_TRUTH[gt_key]
-            self.category_scores = {c: gt.get(c, 0.5) for c in CATEGORIES}
-            self.category_confidence = {c: 1.0 for c in CATEGORIES}
-            self.evidence = {}
-            self.used_ground_truth = True
-            self.overall_score = self._weighted_total(self.category_scores)
+        # ── Strategy 1a: exact or family ground-truth match ──────────────────
+        gt_scores, gt_conf_mult = _gt_family_lookup(self.model_id)
+        if gt_scores is not None:
+            match_type = "exact" if gt_conf_mult == 1.0 else "family"
+            self._log(f"Ground-truth {match_type} match for '{self.model_id}'", method=method)
+            self.category_scores     = {c: gt_scores.get(c, 0.5) for c in CATEGORIES}
+            self.category_confidence = {c: gt_conf_mult           for c in CATEGORIES}
+            self.evidence            = {}
+            self.used_ground_truth   = True
+            self.gt_match_type       = match_type
+            self.overall_score       = self._weighted_total(self.category_scores)
             return
 
-        # 2. HF-metadata heuristics
+        # ── Strategy 2: richer HF metadata heuristics ────────────────────────
         hf_scores, hf_confidence = self._score_from_huggingface(hf_model or {})
 
-        # 3. Optionally blend web evidence
+        # ── Strategy 1b: org-level inherit for stable dimensions ─────────────
+        org_inherit = _gt_org_inherit(self.model_id)
+        if org_inherit:
+            self._log(
+                f"Applying org-level ground-truth inherit for: {list(org_inherit)}", method=method
+            )
+            for dim, val in org_inherit.items():
+                hf_scores[dim]     = val
+                hf_confidence[dim] = 0.80   # high but not ground-truth certain
+            if not self.gt_match_type:
+                self.gt_match_type = "org_inherit"
+
+        # ── Strategy 4: confidence-gated web escalation ───────────────────────
+        # Identify which dimensions are under-confident and need web support.
+        dims_needing_web: set[str] = {
+            c for c in CATEGORIES
+            if hf_confidence.get(c, 0.3) < self.web_escalation_threshold
+        }
+
         evidence_map: dict[str, list[dict]] = {}
-        final_scores = dict(hf_scores)
+        final_scores     = dict(hf_scores)
         final_confidence = dict(hf_confidence)
 
-        if use_llm_web and web_docs:
+        # ── Strategy 3 + 4: dimension-specific targeted web queries ──────────
+        if use_llm_web and dims_needing_web:
+            self._log(
+                f"Targeted web escalation for: {sorted(dims_needing_web)}", method=method
+            )
             model_name = self.model_id.split("/")[-1]
-            self._log("Running LLM web scoring", method=method)
-            web_result = self._score_from_web_docs(web_docs, model_name)
-            if web_result:
-                for c in CATEGORIES:
-                    entry = web_result.get(c, {})
-                    web_score = entry.get("score", 0.5)
-                    web_conf = entry.get("confidence", 0.0)
-                    # Weighted blend: trust web more when its confidence is high
-                    alpha = min(0.6, web_conf)  # max 60 % weight to web
-                    final_scores[c] = (1 - alpha) * hf_scores[c] + alpha * web_score
-                    final_confidence[c] = max(hf_confidence[c], web_conf)
-                    evidence_map[c] = entry.get("evidence", [])
-        elif web_docs:
-            self._log("Applying heuristic web adjustments", method=method)
+            org_name   = self.model_id.split("/")[0] if "/" in self.model_id else ""
+
+            for category in dims_needing_web:
+                targeted_docs = self._fetch_dimension_docs(
+                    category=category,
+                    model_name=model_name,
+                    org_name=org_name,
+                )
+                if targeted_docs:
+                    self.sources = sorted({
+                        *self.sources,
+                        *(d.get("url") for d in targeted_docs if d.get("url")),
+                    })
+
+                dim_result = self._score_dimension_with_llm(
+                    category=category,
+                    docs=targeted_docs,
+                    model_name=model_name,
+                )
+                if dim_result:
+                    web_score = dim_result.get("score", 0.5)
+                    web_conf  = dim_result.get("confidence", 0.0)
+                    # Blend: up to 65 % weight to web when its confidence is high
+                    alpha = min(0.65, web_conf)
+                    final_scores[category] = (1 - alpha) * hf_scores[category] + alpha * web_score
+                    final_confidence[category] = max(hf_confidence[category], web_conf)
+                    evidence_map[category]      = dim_result.get("evidence", [])
+
+        elif use_llm_web and web_docs:
+            # Fallback: use the generic web docs if targeted fetch not available
+            self._log("Applying heuristic web adjustments from generic docs", method=method)
             text = " ".join(d.get("extracted", "") for d in web_docs).lower()
             if any(k in text for k in SOVEREIGN_COMPUTE_HINTS):
                 final_scores["Compute Independence"] = min(
@@ -903,15 +1145,33 @@ class ModelSovereigntyScore:
                 final_scores["Compute Independence"] = max(
                     0.0, final_scores["Compute Independence"] - 0.20
                 )
-            if "open data" in text or ("training data" in text and "transparent" in text):
-                final_scores["Training Data Independence"] = max(
-                    0.0, final_scores["Training Data Independence"] - 0.10
-                )
 
-        self.category_scores = final_scores
+        # ── Strategy 4: targeted jurisdiction web query when country unknown ──
+        # This is a fallback ONLY. If the per-dimension loop above already
+        # fetched and scored "Jurisdictional Risk" (i.e. use_llm_web=True and
+        # it was in dims_needing_web), we must not fetch for it again here —
+        # that was the second source of the 3x-fetch bug. We only land in
+        # this branch when jurisdiction was NOT already resolved by the loop.
+        jurisdiction_already_handled = (
+            use_llm_web and "Jurisdictional Risk" in dims_needing_web
+        )
+        if (
+            self.organisation.country == "–"
+            and not jurisdiction_already_handled
+        ):
+            self._log("Firing jurisdiction-specific web query (country unknown)", method=method)
+            jur_score = self._fetch_jurisdiction_score(
+                model_id=self.model_id,
+                org_name=self.model_id.split("/")[0] if "/" in self.model_id else "",
+            )
+            if jur_score is not None:
+                final_scores["Jurisdictional Risk"]     = jur_score
+                final_confidence["Jurisdictional Risk"] = 0.55
+
+        self.category_scores     = final_scores
         self.category_confidence = final_confidence
-        self.evidence = evidence_map
-        self.overall_score = self._weighted_total(final_scores)
+        self.evidence            = evidence_map
+        self.overall_score       = self._weighted_total(final_scores)
         self._log(f"Overall sovereignty score: {self.overall_score}", method=method)
 
     def _weighted_total(self, scores: dict[str, float]) -> float:
@@ -921,30 +1181,70 @@ class ModelSovereigntyScore:
         )
         return round(total * 100, 2)
 
+    # ------------------------------------------------------------------
+    # Strategy 2: richer HF metadata heuristics
+    # ------------------------------------------------------------------
+
     def _score_from_huggingface(
         self, hf_model: dict
     ) -> tuple[dict[str, float], dict[str, float]]:
-        """
-        Derive per-category scores and confidence values from HF metadata.
-
-        Confidence reflects how much information we could extract from the
-        metadata (1.0 = very confident, 0.3 = mostly guessing).
-        """
-        scores: dict[str, float] = {c: 0.5 for c in CATEGORIES}
+        scores:     dict[str, float] = {c: 0.5 for c in CATEGORIES}
         confidence: dict[str, float] = {c: 0.3 for c in CATEGORIES}
 
+        # ── Bugfix: Big-Tech-with-no-HF-card detector ───────────────────────
+        # Models like GPT-5, Gemini, and Claude have no Hugging Face model
+        # card at all (they aren't hosted there), so hf_model is {}. The old
+        # code returned the neutral 0.5 default for every dimension in that
+        # case, which is wrong: a proprietary API-only model from a known
+        # Big Tech org is essentially never open on data, weights, base
+        # model, or deployment. We use the org_inherit-derived author (via
+        # self.organisation.name, which OrganisationSovereigntyScore.detect_*
+        # sets from the model_id's namespace even when hf_model is empty) to
+        # catch this case and assign the same "closed proprietary" profile
+        # the GROUND_TRUTH table uses for openai/gpt-4 etc., rather than
+        # silently falling back to neutral scores.
+        org_slug = (self.organisation.name or "").lower()
+        org_is_big_tech = any(bt in org_slug for bt in BIG_TECH_ORGS)
+
         if not hf_model:
+            if org_is_big_tech:
+                # Mirror the GROUND_TRUTH "closed API-only" profile used for
+                # known closed models from this org type. High confidence
+                # because "Big Tech org + zero public model card" is itself
+                # strong, unambiguous evidence of an API-only product.
+                scores = {
+                    "Training Data Independence":  0.05,
+                    "Compute Independence":        0.05,
+                    "Weight Ownership & Access":    0.05,
+                    "Base Model Dependency":        0.50,  # genuinely unknown — could be scratch or fine-tune
+                    "Deployment Independence":      0.02,
+                    "Organisational Independence":  0.10,
+                    "Jurisdictional Risk":          JURISDICTION_SCORE.get(self.organisation.country, 0.15),
+                }
+                confidence = {
+                    "Training Data Independence":  0.55,
+                    "Compute Independence":        0.55,
+                    "Weight Ownership & Access":    0.60,
+                    "Base Model Dependency":        0.20,  # left genuinely uncertain
+                    "Deployment Independence":      0.70,
+                    "Organisational Independence":  0.70,
+                    "Jurisdictional Risk":          0.55 if self.organisation.country != "–" else 0.30,
+                }
             return scores, confidence
 
-        author = (hf_model.get("author") or "").lower()
-        model_id_lower = (hf_model.get("id") or self.model_id).lower()
-        tags = [t.lower() for t in (hf_model.get("tags") or [])]
-        tag_text = " ".join(tags)
+        author        = (hf_model.get("author") or "").lower()
+        model_id_lower= (hf_model.get("id") or self.model_id).lower()
+        tags          = [t.lower() for t in (hf_model.get("tags") or [])]
+        tag_text      = " ".join(tags)
 
         card_data = hf_model.get("cardData")
         if not isinstance(card_data, dict):
             card_data = {}
-        readme = (hf_model.get("readme") or hf_model.get("cardData", {}) or "").lower() if isinstance(hf_model.get("readme"), str) else ""
+
+        readme = ""
+        raw_readme = hf_model.get("readme")
+        if isinstance(raw_readme, str):
+            readme = raw_readme.lower()
 
         # ── License ──────────────────────────────────────────────────────────
         raw_license = hf_model.get("license") or ""
@@ -953,9 +1253,9 @@ class ModelSovereigntyScore:
         else:
             licenses = [str(raw_license).lower()] if raw_license else []
 
-        has_open_license = any(any(ol in lic for ol in OPEN_LICENSES) for lic in licenses)
+        has_open_license       = any(any(ol in lic for ol in OPEN_LICENSES)       for lic in licenses)
         has_restricted_license = any(any(rl in lic for rl in RESTRICTED_OPEN_LICENSES) for lic in licenses)
-        has_no_license = not licenses or licenses == [""]
+        has_no_license         = not licenses or licenses == [""]
 
         # ── Base model ───────────────────────────────────────────────────────
         base_model = card_data.get("base_model") or hf_model.get("base_model") or ""
@@ -963,238 +1263,345 @@ class ModelSovereigntyScore:
             base_model = base_model[0] if base_model else ""
         base_model = str(base_model).lower().strip()
 
-        fine_tune_tags = {"finetuned", "fine-tuned", "fine_tuned", "derived", "instruction-tuned", "rlhf", "lora", "qlora"}
+        fine_tune_tags = {"finetuned", "fine-tuned", "fine_tuned", "derived",
+                          "instruction-tuned", "rlhf", "lora", "qlora"}
         has_finetune_tag = any(ft in t for t in tags for ft in fine_tune_tags)
-        pipeline_tag = (hf_model.get("pipeline_tag") or "").lower()
 
-        # ── 1. Training Data Independence ────────────────────────────────────
-        if "fully open" in readme or "open data" in tag_text:
-            scores["Training Data Independence"] = 0.85
-            confidence["Training Data Independence"] = 0.6
+        # ── Strategy 2: sibling / Spaces / param-count signals ───────────────
+        has_local_siblings  = _has_local_run_siblings(hf_model)
+        has_spaces_link     = _has_spaces(hf_model)
+        param_count         = _extract_param_count(hf_model)
+        datasets_score      = _score_datasets_field(card_data)
+        readme_compute      = _score_readme_compute(readme)
+        readme_data         = _score_readme_data(readme)
+
+        # A model with no declared base_model and params < ~100B is very likely a
+        # fine-tune that omitted the field, not a genuine scratch-trained model.
+        # True scratch-trained models are either enormous (>70B) or explicitly declare
+        # "trained from scratch" in their card.  We treat anything under 100B with no
+        # declared base as a probable fine-tune unless the README says otherwise.
+        scratch_hint = any(
+            phrase in readme
+            for phrase in ["trained from scratch", "pretraining from scratch",
+                           "pre-trained from scratch", "no base model"]
+        )
+        is_probably_finetune = (
+            has_finetune_tag
+            or (
+                not base_model
+                and not scratch_hint
+                and param_count is not None
+                and param_count < 100_000_000_000   # under 100B → assume fine-tune
+            )
+        )
+
+        # ── 1. Training Data Independence ─────────────────────────────────────
+        if datasets_score is not None:
+            scores["Training Data Independence"]     = datasets_score
+            confidence["Training Data Independence"] = 0.65
+        elif readme_data is not None:
+            scores["Training Data Independence"]     = readme_data[0]
+            confidence["Training Data Independence"] = readme_data[1]
+        elif "fully open" in readme or "open data" in tag_text:
+            scores["Training Data Independence"]     = 0.85
+            confidence["Training Data Independence"] = 0.60
         elif "transparent" in tag_text or "open" in tag_text:
-            scores["Training Data Independence"] = 0.65
-            confidence["Training Data Independence"] = 0.5
+            scores["Training Data Independence"]     = 0.65
+            confidence["Training Data Independence"] = 0.50
         elif has_open_license:
-            scores["Training Data Independence"] = 0.55
-            confidence["Training Data Independence"] = 0.4
+            scores["Training Data Independence"]     = 0.55
+            confidence["Training Data Independence"] = 0.40
         else:
-            scores["Training Data Independence"] = 0.40
+            scores["Training Data Independence"]     = 0.40
             confidence["Training Data Independence"] = 0.35
 
-        # ── 2. Compute Independence ──────────────────────────────────────────
-        # We can rarely determine this from HF metadata alone; start neutral
-        if any(k in model_id_lower or k in author for k in ["swiss-ai", "ai-sweden", "cscs", "epfl"]):
-            scores["Compute Independence"] = 0.80
+        # ── 2. Compute Independence ───────────────────────────────────────────
+        if readme_compute is not None:
+            scores["Compute Independence"]     = readme_compute[0]
+            confidence["Compute Independence"] = readme_compute[1]
+        elif any(k in model_id_lower or k in author
+                 for k in ["swiss-ai", "ai-sweden", "cscs", "epfl"]):
+            scores["Compute Independence"]     = 0.80
             confidence["Compute Independence"] = 0.65
         elif any(k in author for k in BIG_TECH_ORGS):
-            scores["Compute Independence"] = 0.10
+            scores["Compute Independence"]     = 0.10
             confidence["Compute Independence"] = 0.70
         else:
-            scores["Compute Independence"] = 0.45
+            scores["Compute Independence"]     = 0.45
             confidence["Compute Independence"] = 0.25   # genuinely uncertain
 
-        # ── 3. Weight Ownership & Access ─────────────────────────────────────
+        # ── 3. Weight Ownership & Access ──────────────────────────────────────
         if has_open_license and not has_restricted_license:
-            scores["Weight Ownership & Access"] = 0.85
+            scores["Weight Ownership & Access"]     = 0.85
             confidence["Weight Ownership & Access"] = 0.75
         elif has_restricted_license:
-            # Open-weight but revocable / usage-restricted
-            scores["Weight Ownership & Access"] = 0.50
+            scores["Weight Ownership & Access"]     = 0.50
             confidence["Weight Ownership & Access"] = 0.70
         elif has_no_license:
-            # Unknown — default closed
-            scores["Weight Ownership & Access"] = 0.25
+            scores["Weight Ownership & Access"]     = 0.25
             confidence["Weight Ownership & Access"] = 0.40
         else:
-            # Proprietary / other
-            scores["Weight Ownership & Access"] = 0.15
+            scores["Weight Ownership & Access"]     = 0.15
             confidence["Weight Ownership & Access"] = 0.65
 
-        # ── 4. Base Model Dependency ─────────────────────────────────────────
+        # ── 4. Base Model Dependency ──────────────────────────────────────────
         if base_model:
-            # Derived from another model
-            if any(bt in base_model for bt in ["openai", "gpt", "claude", "gemini", "palm"]):
-                scores["Base Model Dependency"] = 0.10
+            # Check if the base model itself is in the ground-truth table.
+            gt_base, _ = _gt_family_lookup(base_model)
+            if gt_base is not None:
+                # Use the base model's own Weight Ownership score as a proxy.
+                bm_dep = gt_base.get("Weight Ownership & Access", 0.5)
+                scores["Base Model Dependency"]     = round(bm_dep * 0.9, 3)
+                confidence["Base Model Dependency"] = 0.80
+            elif any(bt in base_model for bt in ["openai", "gpt", "claude", "gemini", "palm"]):
+                scores["Base Model Dependency"]     = 0.10
                 confidence["Base Model Dependency"] = 0.80
             elif any(bt in base_model for bt in ["llama", "mistral", "falcon", "qwen"]):
-                scores["Base Model Dependency"] = 0.35
+                scores["Base Model Dependency"]     = 0.35
                 confidence["Base Model Dependency"] = 0.75
             else:
-                scores["Base Model Dependency"] = 0.40
+                scores["Base Model Dependency"]     = 0.40
                 confidence["Base Model Dependency"] = 0.60
-        elif has_finetune_tag:
-            scores["Base Model Dependency"] = 0.35
-            confidence["Base Model Dependency"] = 0.55
+        elif is_probably_finetune:
+            # Small model, no declared base — assume fine-tune of something open
+            scores["Base Model Dependency"]     = 0.35
+            confidence["Base Model Dependency"] = 0.45
         else:
-            # Likely trained from scratch
-            scores["Base Model Dependency"] = 0.80
+            # Likely trained from scratch (large model, no base declared)
+            scores["Base Model Dependency"]     = 0.80
             confidence["Base Model Dependency"] = 0.50
 
-        # ── 5. Deployment Independence ───────────────────────────────────────
-        if has_open_license and not has_restricted_license:
-            scores["Deployment Independence"] = 0.90
+        # ── 5. Deployment Independence ────────────────────────────────────────
+        if has_local_siblings:
+            # GGUF/ONNX files present → can definitely run locally
+            scores["Deployment Independence"]     = 0.95
+            confidence["Deployment Independence"] = 0.90
+        elif has_open_license and not has_restricted_license:
+            base_score = 0.90
+            if has_spaces_link:
+                base_score = min(1.0, base_score + 0.05)
+            scores["Deployment Independence"]     = base_score
             confidence["Deployment Independence"] = 0.75
         elif has_restricted_license:
-            scores["Deployment Independence"] = 0.60
+            scores["Deployment Independence"]     = 0.60
             confidence["Deployment Independence"] = 0.65
         elif has_no_license:
-            scores["Deployment Independence"] = 0.20
+            scores["Deployment Independence"]     = 0.20
             confidence["Deployment Independence"] = 0.40
         else:
-            scores["Deployment Independence"] = 0.10
+            scores["Deployment Independence"]     = 0.10
             confidence["Deployment Independence"] = 0.60
 
-        # ── 6. Organisational Independence ───────────────────────────────────
+        # ── 6. Organisational Independence ────────────────────────────────────
         if any(bt in author for bt in BIG_TECH_ORGS):
-            scores["Organisational Independence"] = 0.05
+            scores["Organisational Independence"]     = 0.05
             confidence["Organisational Independence"] = 0.85
         elif any(pi in author for pi in PUBLIC_INSTITUTION_HINTS):
-            scores["Organisational Independence"] = 0.90
+            scores["Organisational Independence"]     = 0.90
             confidence["Organisational Independence"] = 0.75
         elif "university" in author or "institute" in author or "research" in author:
-            scores["Organisational Independence"] = 0.80
+            scores["Organisational Independence"]     = 0.80
             confidence["Organisational Independence"] = 0.60
         else:
-            # Independent / startup — assume moderate
-            scores["Organisational Independence"] = 0.55
+            scores["Organisational Independence"]     = 0.55
             confidence["Organisational Independence"] = 0.40
 
-        # ── 7. Jurisdictional Risk ───────────────────────────────────────────
+        # ── 7. Jurisdictional Risk ────────────────────────────────────────────
         country = self.organisation.country
-        scores["Jurisdictional Risk"] = JURISDICTION_SCORE.get(country, 0.40)
-        confidence["Jurisdictional Risk"] = 0.65 if country != "–" else 0.30
+        scores["Jurisdictional Risk"]     = JURISDICTION_SCORE.get(country, 0.40)
+        confidence["Jurisdictional Risk"] = 0.65 if country != "–" else 0.25
 
         return scores, confidence
 
     # ------------------------------------------------------------------
-    # LLM web scoring
+    # Strategy 3: dimension-specific web fetch
     # ------------------------------------------------------------------
 
-    def _score_from_web_docs(
+    def _fetch_dimension_docs(
         self,
-        web_docs: list[dict],
+        category: str,
+        model_name: str,
+        org_name: str,
+        user_agent: str = "Sovereignty-Pipeline/1.0",
+        top_k: int = 3,
+    ) -> list[dict]:
+        """
+        Fetch web documents specifically relevant to *category* using the
+        targeted query templates in DIMENSION_QUERIES.
+
+        Falls back gracefully to an empty list if pipeline or network
+        is unavailable.
+        """
+        if not _PIPELINE_AVAILABLE:
+            return []
+
+        templates = DIMENSION_QUERIES.get(category, [])
+        all_docs: list[dict] = []
+        seen_urls: set[str] = set()
+
+        for template in templates[:2]:   # at most 2 queries per dimension
+            query = (
+                template
+                .replace("{model}", model_name)
+                .replace("{org}", org_name or model_name)
+            )
+            try:
+                docs = fetch_web_evidence(
+                    query,
+                    user_agent=user_agent,
+                    top_k_per_query=top_k,
+                    delay_between_requests=0.5,
+                    verbose=self.verbose,
+                )
+                for d in docs:
+                    url = d.get("url", "")
+                    if url not in seen_urls:
+                        seen_urls.add(url)
+                        all_docs.append(d)
+            except Exception as exc:
+                self._log_error("_fetch_dimension_docs", exc, context={"query": query})
+
+        return all_docs
+
+    def _score_dimension_with_llm(
+        self,
+        category: str,
+        docs: list[dict],
         model_name: str,
         num_attempts: int = 2,
     ) -> Optional[dict]:
-        """Use LLM to extract per-category scores from scraped documents."""
-        method = "_score_from_web_docs"
+        """
+        Run a single-dimension LLM scoring call against pre-filtered documents.
+        Returns a dict with keys: score, confidence, evidence.
+        """
+        method = "_score_dimension_with_llm"
         if not _PIPELINE_AVAILABLE or not os.getenv("PUBLICAI_KEY"):
-            self._log("Skipping LLM web scoring (no PUBLICAI_KEY)", method=method)
             return None
 
-        # Deduplicate by domain; non-HF sources first
-        seen_domains: set[str] = set()
-        deduped: list[dict] = []
-        for d in web_docs:
-            url = (d.get("url") or "").lower()
-            domain = re.sub(r"https?://", "", url).split("/")[0]
-            if domain not in seen_domains:
-                seen_domains.add(domain)
-                deduped.append(d)
-        non_hf = [d for d in deduped if "huggingface.co" not in (d.get("url") or "")]
-        hf_docs = [d for d in deduped if "huggingface.co" in (d.get("url") or "")]
-        web_docs = non_hf + hf_docs
+        filtered = [d for d in docs if _is_relevant(d.get("extracted", ""), category)] or docs
+        if not filtered:
+            return None
 
-        if not web_docs:
-            return {c: {"score": 0.5, "confidence": 0.0, "evidence": []} for c in CATEGORIES}
-
-        results: dict[str, dict] = {}
-
-        for category in CATEGORIES:
-            filtered = [
-                d for d in web_docs
-                if _is_relevant(d.get("extracted", ""), category)
-            ] or web_docs
-
-            source_blocks: list[str] = []
-            model_lower = model_name.lower()
-            for j, d in enumerate(filtered[:4]):
-                raw = d.get("extracted") or ""
-                sentences = re.split(r"(?<=[.!?])\s+", raw)
-                relevant = [
-                    s.strip() for s in sentences
-                    if model_lower in s.lower() and len(s.strip()) > 40
-                ]
-                snippet = " ".join(relevant[:8]) if relevant else raw[:1500]
-                source_blocks.append(
-                    f"Source {j + 1}:\nURL: {d.get('url', '')}\nContent:\n{snippet}"
-                )
-
-            sources_text = "\n\n".join(source_blocks)
-            prompt = (
-                f"You are extracting evidence from web sources about an AI model.\n\n"
-                f"Return ONLY a JSON object. No preamble, no markdown fences.\n\n"
-                f"Sources:\n{sources_text}\n\n"
-                f"Task: Score the model \"{model_name}\" on this dimension: \"{category}\"\n\n"
-                f"Definition of this dimension:\n"
-                f"{_CATEGORY_DEFINITIONS.get(category, '')}\n\n"
-                f"Instructions:\n"
-                f"- Read the sources carefully.\n"
-                f"- Find a sentence or passage directly relevant to the question.\n"
-                f"- Copy it EXACTLY as it appears — do not rephrase.\n"
-                f"- Score 1.0 = fully sovereign on this dimension, 0.0 = fully dependent on Big Tech.\n\n"
-                f"Return this exact JSON:\n"
-                f'{{\n'
-                f'  "score": <float 0.0–1.0>,\n'
-                f'  "confidence": <float 0.0–1.0>,\n'
-                f'  "quote": "<exact substring from one source>",\n'
-                f'  "url": "<url of that source>",\n'
-                f'  "rationale": "<one sentence linking quote to score>"\n'
-                f'}}\n\n'
-                f'If no relevant text exists, set quote to "" and confidence to 0.'
+        model_lower   = model_name.lower()
+        source_blocks: list[str] = []
+        for j, d in enumerate(filtered[:4]):
+            raw = d.get("extracted") or ""
+            sentences = re.split(r"(?<=[.!?])\s+", raw)
+            relevant  = [
+                s.strip() for s in sentences
+                if model_lower in s.lower() and len(s.strip()) > 40
+            ]
+            snippet = " ".join(relevant[:8]) if relevant else raw[:1500]
+            source_blocks.append(
+                f"Source {j + 1}:\nURL: {d.get('url', '')}\nContent:\n{snippet}"
             )
 
-            try:
-                parsed = None
-                for _ in range(num_attempts):
-                    raw_response = ask_publicai(prompt=prompt, user_agent="Sovereignty-Pipeline/1.0")
-                    parsed = _extract_valid_json(raw_response)
-                    if parsed:
-                        break
+        sources_text = "\n\n".join(source_blocks)
+        prompt = (
+            f"You are extracting evidence from web sources about an AI model.\n\n"
+            f"Return ONLY a JSON object. No preamble, no markdown fences.\n\n"
+            f"Sources:\n{sources_text}\n\n"
+            f"Task: Score the model \"{model_name}\" on this dimension: \"{category}\"\n\n"
+            f"Definition:\n{_CATEGORY_DEFINITIONS.get(category, '')}\n\n"
+            f"Instructions:\n"
+            f"- Find a sentence directly relevant to the question.\n"
+            f"- Copy it EXACTLY as it appears.\n"
+            f"- Score 1.0 = fully sovereign on this dimension, 0.0 = fully dependent on Big Tech.\n\n"
+            f"Return this exact JSON:\n"
+            f'{{\n'
+            f'  "score": <float 0.0-1.0>,\n'
+            f'  "confidence": <float 0.0-1.0>,\n'
+            f'  "quote": "<exact substring from one source>",\n'
+            f'  "url": "<url of that source>",\n'
+            f'  "rationale": "<one sentence linking quote to score>"\n'
+            f'}}\n\n'
+            f'If no relevant text exists, set quote to "" and confidence to 0.'
+        )
 
-                if not parsed:
-                    raise ValueError("No valid JSON from LLM")
+        try:
+            parsed = None
+            for _ in range(num_attempts):
+                raw_response = ask_publicai(prompt=prompt, user_agent="Sovereignty-Pipeline/1.0")
+                parsed = _extract_valid_json(raw_response)
+                if parsed:
+                    break
 
-                score = _parse_float(parsed.get("score")) or 0.5
-                confidence = _parse_float(parsed.get("confidence")) or 0.0
-                quote_text = (parsed.get("quote") or "").strip()
-                rationale = (parsed.get("rationale") or "").strip()
+            if not parsed:
+                raise ValueError("No valid JSON from LLM")
 
-                evidence: list[dict] = []
-                if quote_text and len(quote_text) > 20:
-                    verified_url = _verify_quote(quote_text, filtered)
-                    if verified_url is not None:
-                        evidence.append({
-                            "quote": quote_text,
-                            "url": verified_url or parsed.get("url", ""),
-                            "rationale": rationale,
-                            "verified": True,
-                        })
+            score      = _parse_float(parsed.get("score"))      or 0.5
+            conf       = _parse_float(parsed.get("confidence")) or 0.0
+            quote_text = (parsed.get("quote") or "").strip()
+            rationale  = (parsed.get("rationale") or "").strip()
 
-                # Fallback: pick best heuristic sentence
-                if not evidence:
-                    best = self._pick_best_sentence(filtered, category, model_name)
-                    if best:
-                        best["verified"] = False
-                        evidence.append(best)
+            evidence: list[dict] = []
+            if quote_text and len(quote_text) > 20:
+                verified_url = _verify_quote(quote_text, filtered)
+                if verified_url is not None:
+                    evidence.append({
+                        "quote":     quote_text,
+                        "url":       verified_url or parsed.get("url", ""),
+                        "rationale": rationale,
+                        "verified":  True,
+                    })
 
-                results[category] = {"score": score, "confidence": confidence, "evidence": evidence}
-
-            except Exception as exc:
-                self._log_error(method, exc, context={"category": category})
+            if not evidence:
                 best = self._pick_best_sentence(filtered, category, model_name)
-                results[category] = {
-                    "score": 0.5,
-                    "confidence": 0.0,
-                    "evidence": [{**best, "verified": False}] if best else [],
-                }
+                if best:
+                    best["verified"] = False
+                    evidence.append(best)
 
-        return results
+            return {"score": score, "confidence": conf, "evidence": evidence}
+
+        except Exception as exc:
+            self._log_error(method, exc, context={"category": category})
+            best = self._pick_best_sentence(filtered, category, model_name)
+            return {
+                "score":      0.5,
+                "confidence": 0.0,
+                "evidence":   [{**best, "verified": False}] if best else [],
+            }
+
+    def _fetch_jurisdiction_score(
+        self, model_id: str, org_name: str
+    ) -> Optional[float]:
+        """
+        Dedicated jurisdiction web query fired when country detection returns '–'.
+        Returns a JURISDICTION_SCORE float if a country can be identified,
+        else None.
+        """
+        if not _PIPELINE_AVAILABLE:
+            return None
+        query = f'"{org_name or model_id}" headquarters incorporated country domicile'
+        try:
+            docs = fetch_web_evidence(
+                query,
+                user_agent="Sovereignty-Pipeline/1.0",
+                top_k_per_query=3,
+                delay_between_requests=0.5,
+                verbose=self.verbose,
+            )
+        except Exception:
+            return None
+
+        blob = " ".join(d.get("extracted", "") for d in docs).lower()
+        for country_name, score in sorted(
+            JURISDICTION_SCORE.items(), key=lambda x: x[1], reverse=True
+        ):
+            if country_name.lower() in blob:
+                self._log(
+                    f"Jurisdiction inferred from web: {country_name}", method="_fetch_jurisdiction_score"
+                )
+                # Update the parent org country if it's still unknown
+                if self.organisation.country == "–":
+                    self.organisation.country = country_name
+                return score
+        return None
 
     def _pick_best_sentence(
         self, docs: list[dict], category: str, model_name: str
     ) -> Optional[dict]:
-        model_lower = model_name.lower()
+        model_lower  = model_name.lower()
         candidates: list[tuple[int, str, str]] = []
         for d in docs:
             raw = d.get("extracted") or ""
@@ -1213,7 +1620,11 @@ class ModelSovereigntyScore:
                 for s in re.split(r"(?<=[.!?])\s+", (d.get("extracted") or "")):
                     s = s.strip()
                     if len(s) > 60 and not _is_boilerplate(s):
-                        return {"quote": s, "url": d.get("url", ""), "rationale": f"Best available text for: {category}"}
+                        return {
+                            "quote":     s,
+                            "url":       d.get("url", ""),
+                            "rationale": f"Best available text for: {category}",
+                        }
             return None
         candidates.sort(key=lambda x: x[0], reverse=True)
         _, text, url = candidates[0]
@@ -1229,10 +1640,10 @@ class ModelSovereigntyScore:
 
         dims = [
             {
-                "category": c,
-                "score": round(float(self.category_scores.get(c, 0.5)), 3),
+                "category":   c,
+                "score":      round(float(self.category_scores.get(c, 0.5)), 3),
                 "confidence": round(float(self.category_confidence.get(c, 0.3)), 3),
-                "weight": round(self.weights.get(c, 1.0 / len(CATEGORIES)), 3),
+                "weight":     round(self.weights.get(c, 1.0 / len(CATEGORIES)), 3),
             }
             for c in CATEGORIES
         ]
@@ -1245,57 +1656,81 @@ class ModelSovereigntyScore:
                     evidence_lines.append(f'[{c}] "{q}" — {ev.get("rationale", "")}')
 
         evidence_section = "\n".join(evidence_lines) or "(No web quotes available.)"
+        gt_note = (
+            f"Ground-truth match type: {self.gt_match_type}. "
+            "Some dimensions were inherited from known entries."
+            if self.used_ground_truth or self.gt_match_type
+            else "Scores derived from HF metadata and web evidence."
+        )
+
+        # Build a sorted view so the prompt can reference most/least influential dims easily
+        dims_sorted = sorted(dims, key=lambda d: d["weight"] * abs(d["score"] - 0.5), reverse=True)
+
+        BAD_EXAMPLE = (
+            "Compute Independence scored high because the model was trained on proprietary "
+            "infrastructure owned by the developing organization, scoring 0.89. Licensing "
+            "Independence also scored high (0.95) as it is released under a permissive licence "
+            "with no Big Tech involvement."
+        )
+        GOOD_EXAMPLE = (
+            "The model's weights are gated behind a request-access form on a platform controlled "
+            "by the originating lab, meaning any downstream operator can have access revoked "
+            "unilaterally — a hard constraint on redistribution rights regardless of what the "
+            "licence text says. Training ran entirely on leased hyperscaler capacity, so the "
+            "compute dependency is structural rather than incidental; a commercial dispute or "
+            "policy change at the cloud provider would halt any further development."
+        )
 
         prompt = f"""
-        You are explaining an AI sovereignty score to a highly technical audience.
+            You are a technical analyst. Your job is to explain the *causal reasoning* behind an AI sovereignty
+            assessment — specifically, what real-world facts, licence terms, and architectural decisions drove
+            the result for {self.model_id}.
 
-        Definition of AI sovereignty:
-        A sovereign AI model is one that can be accessed, deployed, modified, and operated without reliance on, control by, or enforced constraints from dominant external providers (e.g. Big Tech platforms). This includes independence across infrastructure (compute/hosting), distribution channels, licensing, weights access, and operational control. A model is less sovereign if any critical capability (usage, scaling, modification, or access) can be restricted, revoked, or mediated by a third party.
+            Definition of AI sovereignty:
+            A sovereign AI model is one that can be accessed, deployed, modified, and operated without reliance
+            on, control by, or enforced constraints from dominant external providers (e.g. Big Tech platforms).
+            This includes independence across infrastructure, distribution channels, licensing, weights access,
+            and operational control.
 
-        Scoring interpretation:
-        Score 100 = fully sovereign (no meaningful external dependencies or control points).
-        Score 0 = entirely dependent (access and use fully mediated or controlled by external providers).
+            {gt_note}
 
-        Model: {self.model_id}
-        Overall score: {self.overall_score:.2f}/100
-        Ground-truth entry used: {self.used_ground_truth}
+            Category scores (0=not sovereign, 1=fully sovereign), sorted by influence on the final score:
+            {json.dumps(dims_sorted, indent=2)}
 
-        Category breakdown (score: 0=not sovereign, 1=fully sovereign):
-        {json.dumps(dims, indent=2)}
+            Web evidence:
+            {evidence_section}
 
-        Web evidence (verified quotes):
-        {evidence_section}
+            ---
+            HARD RULES — violating any of these makes the output wrong:
+            1. Do not mention any score, number, or percentage. The reader has the table.
+            2. Do not name a category and then describe what that category measures.
+            3. Do not use bullet points, numbered lists, headers, or markdown.
+            4. Every factual claim must trace back to the evidence above or universally known facts about this model.
+            5. Pick the 2-3 categories with most leverage on the final score and explain only those.
+            6. If signals conflict (e.g. open weights but cloud-only deployment), say so and explain which dominates and why.
 
-        Write a rigorous, evidence-driven explanation (5–8 sentences) that:
-        1. Explains why the model lands at this overall score by explicitly linking category scores to concrete sovereignty constraints or freedoms.
-        2. Identifies the 2–3 most influential categories (positive or negative), explaining how they increase or reduce real-world independence.
-        3. Uses the sovereignty definition above to interpret the results (e.g. whether the model can be self-hosted, whether access can be revoked, whether usage is permissionless).
-        4. Integrates multiple direct quotes from the evidence as supporting proof. Quotes must be embedded naturally and interpreted (explain what they imply about control, dependence, or restriction).
-        5. Include quotes from relavent sources to justify reasoning.
-        5. Resolves any ambiguity or conflicting signals in the evidence by prioritising the most authoritative or explicit sources.
-        6. Focuses on concrete control points (hosting dependence, API gating, licensing restrictions, weights access, ability to run locally, etc.), not abstract summaries.
-        7. Avoids describing the scoring formula itself.
-        8. Avoids stating the score of each dimension.
+            Here is the difference between a BAD answer and a GOOD answer for a fictional model:
 
-        Style requirements:
-        - Plain prose only (no bullet points, no markdown).
-        - Be precise, assertive, and analytical; avoid hedging language.
-        - Every major claim must be traceable to either a category score or a quoted source.
-        - Prefer depth over brevity; the explanation should read like a technical audit of the model’s independence.
+            BAD (restates scores, names categories abstractly, no causal chain):
+            {BAD_EXAMPLE}
+
+            GOOD (concrete facts, causal chain, no numbers, plain prose):
+            {GOOD_EXAMPLE}
+
+            Now write the GOOD-style explanation for {self.model_id}. 5-7 sentences. No preamble.
         """
-
         try:
             return ask_publicai(prompt=prompt, user_agent=user_agent)
         except Exception as exc:
-            print(exc)
-            print("This is not working")
             self._log_error("_explain_score", exc)
             return self._fallback_explanation()
 
     def _fallback_explanation(self) -> str:
         parts = [f"{self.model_id} sovereignty score: {self.overall_score:.2f}/100."]
+        if self.gt_match_type:
+            parts.append(f"Ground-truth match type: {self.gt_match_type}.")
         for c in CATEGORIES:
-            v = self.category_scores.get(c, 0.5)
+            v    = self.category_scores.get(c, 0.5)
             conf = self.category_confidence.get(c, 0.3)
             flag = " [low confidence]" if conf < 0.4 else ""
             parts.append(f"{c}: {v:.3f}{flag}")
@@ -1303,7 +1738,7 @@ class ModelSovereigntyScore:
 
 
 # ---------------------------------------------------------------------------
-# Category definitions (used in LLM prompts for clearer extraction)
+# Category definitions (used in LLM prompts)
 # ---------------------------------------------------------------------------
 
 _CATEGORY_DEFINITIONS: dict[str, str] = {
@@ -1321,7 +1756,7 @@ _CATEGORY_DEFINITIONS: dict[str, str] = {
     "Weight Ownership & Access": (
         "Score 1.0 if the weights are released under an open licence with no usage "
         "restrictions and cannot be revoked by a third party. Score 0.0 if the "
-        "weights are proprietary and access can be revoked at any time (e.g. API-only)."
+        "weights are proprietary and access can be revoked at any time (API-only)."
     ),
     "Base Model Dependency": (
         "Score 1.0 if the model was trained from scratch. Score 0.0 if it is a "
@@ -1349,34 +1784,26 @@ _CATEGORY_DEFINITIONS: dict[str, str] = {
 
 
 # ---------------------------------------------------------------------------
-# OrganisationSovereigntyScore
+# Country / org-type detection (unchanged from original, kept intact)
 # ---------------------------------------------------------------------------
 
 def _normalise(text: str) -> str:
-    """Lowercase and collapse every non-alphanumeric run to a single space."""
     return re.sub(r"[^a-z0-9]+", " ", (text or "").lower()).strip()
 
 
 def _build_keyword_variants(kw: str) -> list[str]:
-    """
-    Return surface forms of a keyword for matching org slugs and free text.
-
-    Covers ``ai-sweden``, ``ai_sweden``, ``AISweden``, ``ai sweden``, etc.
-    """
-    raw = kw.lower().strip()
+    raw        = kw.lower().strip()
     normalised = _normalise(kw)
-    no_space = normalised.replace(" ", "")
+    no_space   = normalised.replace(" ", "")
     hyphenated = normalised.replace(" ", "-")
-    underscored = normalised.replace(" ", "_")
+    underscored= normalised.replace(" ", "_")
     return list({raw, normalised, no_space, hyphenated, underscored})
 
 
-# Built once at import time
 _KW_VARIANTS: dict[str, list[str]] = {
     kw: _build_keyword_variants(kw) for kw in COUNTRY_KEYWORDS
 }
 
-# Suffixes allowed after a keyword prefix in compound slugs (e.g. mistral + ai → mistralai)
 _ORG_SLUG_SUFFIXES: frozenset[str] = frozenset({
     "ai", "hq", "labs", "lab", "inc", "ltd", "llc", "corp", "co",
     "group", "team", "models", "model", "research", "institute",
@@ -1384,7 +1811,6 @@ _ORG_SLUG_SUFFIXES: frozenset[str] = frozenset({
 
 
 def _match_country_word_boundary(text: str) -> Optional[str]:
-    """Match keywords with word-boundary checks on normalised text."""
     norm = _normalise(text)
     if not norm:
         return None
@@ -1397,7 +1823,6 @@ def _match_country_word_boundary(text: str) -> Optional[str]:
 
 
 def _match_country_tokens(text: str) -> Optional[str]:
-    """Match each whitespace/hyphen token independently (longest keyword wins)."""
     norm = _normalise(text)
     if not norm:
         return None
@@ -1409,19 +1834,12 @@ def _match_country_tokens(text: str) -> Optional[str]:
 
 
 def _match_country_slug_segment(segment: str) -> Optional[str]:
-    """
-    Match a single org-slug segment (e.g. ``swiss``, ``mistralai``, ``BSC``).
-
-    Handles compound names where a keyword is a prefix (``mistral`` + ``ai``).
-    """
     segment = (segment or "").lower().strip()
     if not segment:
         return None
-
     hit = _match_country_word_boundary(segment)
     if hit:
         return hit
-
     for kw in sorted(_KW_VARIANTS, key=len, reverse=True):
         for variant in _KW_VARIANTS[kw]:
             vs = variant.replace(" ", "")
@@ -1438,33 +1856,20 @@ def _match_country_slug_segment(segment: str) -> Optional[str]:
 
 
 def _match_country_from_slug(slug: str) -> Optional[str]:
-    """
-    Match country signals in a Hugging Face org slug or model namespace.
-
-    Splits on ``-``, ``_``, ``.``, ``/`` and tries each segment, then the
-    full slug, then embedded hyphenated keywords (``ai-sweden`` in
-    ``ai-sweden-models``).
-    """
     if not slug:
         return None
-
     slug_lower = slug.lower()
-    segments = [s for s in re.split(r"[-_./]+", slug_lower) if s]
-
+    segments   = [s for s in re.split(r"[-_./]+", slug_lower) if s]
     for segment in sorted(segments, key=len, reverse=True):
         hit = _match_country_slug_segment(segment)
         if hit:
             return hit
-
     hit = _match_country_word_boundary(slug_lower)
     if hit:
         return hit
-
     hit = _match_country_tokens(slug_lower)
     if hit:
         return hit
-
-    # Embedded multi-part keywords (e.g. "ai-sweden" inside "ai-sweden-models")
     for kw in sorted(COUNTRY_KEYWORDS, key=len, reverse=True):
         for variant in _KW_VARIANTS[kw]:
             if len(variant) < 4:
@@ -1472,29 +1877,15 @@ def _match_country_from_slug(slug: str) -> Optional[str]:
             for form in {variant, variant.replace(" ", "-"), variant.replace(" ", "_")}:
                 if slug_lower == form:
                     return COUNTRY_KEYWORDS[kw]
-                if re.search(
-                    rf"(^|[-_.]){re.escape(form)}($|[-_.])",
-                    slug_lower,
-                ):
+                if re.search(rf"(^|[-_.]){re.escape(form)}($|[-_.])", slug_lower):
                     return COUNTRY_KEYWORDS[kw]
-
     return None
 
 
 def _match_country(text: str) -> Optional[str]:
-    """
-    Try every keyword strategy against a text blob.
-
-    Longer keywords are tested first so ``ai-sweden`` beats ``sweden``.
-    """
     if not text:
         return None
-
-    for matcher in (
-        _match_country_word_boundary,
-        _match_country_tokens,
-        _match_country_from_slug,
-    ):
+    for matcher in (_match_country_word_boundary, _match_country_tokens, _match_country_from_slug):
         hit = matcher(text)
         if hit:
             return hit
@@ -1502,13 +1893,7 @@ def _match_country(text: str) -> Optional[str]:
 
 
 def _collect_hf_country_text(hf_model: dict, org: str) -> str:
-    """Gather all HF metadata fields that may contain country signals."""
-    parts: list[str] = [
-        org,
-        hf_model.get("author") or "",
-        hf_model.get("id") or "",
-    ]
-
+    parts: list[str] = [org, hf_model.get("author") or "", hf_model.get("id") or ""]
     card = hf_model.get("cardData")
     if isinstance(card, dict):
         for key in ("country", "location", "region", "affiliation", "language"):
@@ -1518,59 +1903,41 @@ def _collect_hf_country_text(hf_model: dict, org: str) -> str:
         base = card.get("base_model")
         if base:
             parts.append(str(base))
-
     tags = hf_model.get("tags") or []
     if isinstance(tags, list):
         parts.extend(str(t) for t in tags)
-
     return " ".join(str(p) for p in parts if p)
- 
- 
+
+
 # ---------------------------------------------------------------------------
-# Main dataclass
+# OrganisationSovereigntyScore
 # ---------------------------------------------------------------------------
- 
+
 @dataclass
 class OrganisationSovereigntyScore:
     """
     Aggregates sovereignty scores for all models of one organisation.
- 
-    Parameters
-    ----------
-    name:
-        Organisation name (e.g. ``"mistralai"``).
-    organisation_type:
-        ``"Big Tech"``, ``"State-backed"``, ``"Independent"``,
-        ``"Non-profit"``, or ``"Community"``.
-    country:
-        Inferred home country.
-    metadata:
-        Arbitrary key/value pairs.
     """
- 
+
     name:              str
     organisation_type: str  = "Independent"
     country:           str  = "–"
     metadata:          dict = field(default_factory=dict)
- 
+
     _models: list[ModelSovereigntyScore] = field(
         default_factory=list, init=False, repr=False
     )
- 
-    # NOTE: _KW_VARIANTS is NOT a dataclass field — see FIX 1 above.
- 
+
     # ------------------------------------------------------------------
     # Model management
     # ------------------------------------------------------------------
- 
+
     def add_model(self, model: ModelSovereigntyScore) -> None:
         if model.organisation is not self:
-            raise ValueError(
-                f"Model '{model.model_id}' is linked to a different organisation."
-            )
+            raise ValueError(f"Model '{model.model_id}' is linked to a different organisation.")
         if model not in self._models:
             self._models.append(model)
- 
+
     def create_model(
         self,
         model_id: str,
@@ -1585,29 +1952,29 @@ class OrganisationSovereigntyScore:
         )
         self._models.append(m)
         return m
- 
+
     @property
     def models(self) -> list[ModelSovereigntyScore]:
         return list(self._models)
- 
+
     # ------------------------------------------------------------------
     # Aggregate metrics
     # ------------------------------------------------------------------
- 
+
     def average_score(self) -> Optional[float]:
         evaluated = [m.overall_score for m in self._models if m.overall_score is not None]
         if not evaluated:
             return None
         return round(sum(evaluated) / len(evaluated), 2)
- 
+
     def best_model(self) -> Optional[ModelSovereigntyScore]:
         evaluated = [m for m in self._models if m.overall_score is not None]
         return max(evaluated, key=lambda m: m.overall_score) if evaluated else None  # type: ignore
- 
+
     def worst_model(self) -> Optional[ModelSovereigntyScore]:
         evaluated = [m for m in self._models if m.overall_score is not None]
         return min(evaluated, key=lambda m: m.overall_score) if evaluated else None  # type: ignore
- 
+
     def score_summary(self) -> dict:
         evaluated = [m.overall_score for m in self._models if m.overall_score is not None]
         if not evaluated:
@@ -1618,12 +1985,8 @@ class OrganisationSovereigntyScore:
             "average":     round(sum(evaluated) / len(evaluated), 2),
             "model_count": len(evaluated),
         }
- 
+
     def low_confidence_warnings(self) -> list[dict]:
-        """
-        Return {model, category, confidence, score} entries where confidence
-        is below 0.4, flagging scores based on thin evidence.
-        """
         warnings = []
         for m in self._models:
             for c, conf in (m.category_confidence or {}).items():
@@ -1635,27 +1998,18 @@ class OrganisationSovereigntyScore:
                         "score":      round(m.category_scores.get(c, 0.5), 3),
                     })
         return warnings
- 
+
     @classmethod
     def detect_country(cls, hf_model: dict, model_id: str = "") -> str:
-        """
-        Infer the organisation's home country from HF metadata and keyword tables.
-
-        Search order (first hit wins):
-
-        1. Org slug / author / model id (fast, works offline)
-        2. Hugging Face organisation API metadata + URLs
-        3. Model card fields and tags
-        """
         effective_id = model_id or (hf_model.get("id") if hf_model else "") or ""
-        namespace = effective_id.split("/")[0] if "/" in effective_id else effective_id
+        namespace    = effective_id.split("/")[0] if "/" in effective_id else effective_id
 
         if not hf_model:
             hit = _match_country_from_slug(namespace) if namespace else None
             return hit if hit else "–"
 
         author = (hf_model.get("author") or "").strip()
-        org = effective_id.split("/")[0] if "/" in effective_id else author
+        org    = effective_id.split("/")[0] if "/" in effective_id else author
 
         for candidate in dict.fromkeys([org, author, effective_id, namespace, f"{author} {effective_id}"]):
             if not candidate:
@@ -1702,13 +2056,8 @@ class OrganisationSovereigntyScore:
 
     @classmethod
     def detect_org_type(cls, hf_model: dict) -> str:
-        """
-        Infer organisation type from a web search blob, falling back to
-        simple author-string matching when DuckDuckGo is unavailable.
-        """
         author   = (hf_model.get("author") or "").lower()
         org_type = "Independent"
- 
         try:
             from duckduckgo_search import DDGS
             with DDGS() as ddgs:
@@ -1716,19 +2065,15 @@ class OrganisationSovereigntyScore:
             blob = " ".join(
                 r.get("body", "") or r.get("title", "") or "" for r in results
             ).lower()
- 
             if any(k in blob for k in BIG_TECH_ORGS):
                 org_type = "Big Tech"
             elif any(k in blob for k in PUBLIC_INSTITUTION_HINTS):
                 org_type = "State-backed"
-            elif any(k in blob for k in ["non-profit", "nonprofit", "charity",
-                                          "foundation", "ngo"]):
+            elif any(k in blob for k in ["non-profit", "nonprofit", "charity", "foundation", "ngo"]):
                 org_type = "Non-profit"
             elif any(k in blob for k in ["community", "collective", "open-source"]):
                 org_type = "Community"
- 
         except Exception:
-            # Fallback: match directly against the author slug
             if any(x in author for x in BIG_TECH_ORGS):
                 org_type = "Big Tech"
             elif any(x in author for x in PUBLIC_INSTITUTION_HINTS):
@@ -1737,38 +2082,37 @@ class OrganisationSovereigntyScore:
                 org_type = "Non-profit"
             elif "community" in author or "collective" in author:
                 org_type = "Community"
- 
         return org_type
- 
+
     # ------------------------------------------------------------------
     # Serialisation
     # ------------------------------------------------------------------
- 
+
     def to_dict(self) -> dict:
         return {
             "organisation": {
-                "name":                   self.name,
-                "organisation_type":      self.organisation_type,
-                "country":                self.country,
-                "metadata":               self.metadata,
-                "aggregate":              self.score_summary(),
+                "name":                    self.name,
+                "organisation_type":       self.organisation_type,
+                "country":                 self.country,
+                "metadata":                self.metadata,
+                "aggregate":               self.score_summary(),
                 "low_confidence_warnings": self.low_confidence_warnings(),
             },
             "models": [m.to_dict() for m in self._models],
         }
- 
+
     def save_json(self, path: "str | Path", indent: int = 2) -> Path:
         dest = Path(path).resolve()
         dest.parent.mkdir(parents=True, exist_ok=True)
         with dest.open("w", encoding="utf-8") as fh:
             json.dump(self.to_dict(), fh, indent=indent, ensure_ascii=False)
         return dest
- 
+
     @classmethod
     def load_json(cls, path: "str | Path") -> "OrganisationSovereigntyScore":
         with Path(path).open("r", encoding="utf-8") as fh:
             data = json.load(fh)
- 
+
         org_data = data.get("organisation", {})
         org = cls(
             name=              org_data.get("name",              ""),
@@ -1776,7 +2120,7 @@ class OrganisationSovereigntyScore:
             country=           org_data.get("country",           "–"),
             metadata=          org_data.get("metadata",          {}),
         )
- 
+
         for m_data in data.get("models", []):
             m = ModelSovereigntyScore(model_id=m_data["model_id"], organisation=org)
             m.overall_score       = m_data.get("value")
@@ -1786,23 +2130,11 @@ class OrganisationSovereigntyScore:
             m.sources             = m_data.get("sources")             or []
             m.explanation         = m_data.get("explanation")
             m.used_ground_truth   = m_data.get("used_ground_truth",   False)
- 
-            # FIX 4 — restore fallback_log so degradation history survives
-            # a JSON round-trip (field introduced in ModelSovereigntyScore session)
-            for fb in m_data.get("fallback_log", []):
-                m.fallback_log.append(
-                    _FallbackRecord(
-                        method=        fb.get("method",       ""),
-                        intended=      fb.get("intended",     ""),
-                        fallback_used= fb.get("fallback_used",""),
-                        reason=        fb.get("reason",       ""),
-                    )
-                )
- 
+            m.gt_match_type       = m_data.get("gt_match_type")
             org._models.append(m)
- 
+
         return org
- 
+
     def __repr__(self) -> str:
         return (
             f"OrganisationSovereigntyScore("
@@ -1810,12 +2142,12 @@ class OrganisationSovereigntyScore:
             f"models={len(self._models)}, avg_score={self.average_score()}"
             f")"
         )
- 
- 
+
+
 # ---------------------------------------------------------------------------
 # Convenience factory
 # ---------------------------------------------------------------------------
- 
+
 def evaluate_model(
     model_id:    str,
     use_web:     bool = False,
@@ -1829,12 +2161,12 @@ def evaluate_model(
     author   = ((hf_model or {}).get("author") or model_id.split("/")[0])
 
     org = OrganisationSovereigntyScore(
-        name=author,
+        name=              author,
         organisation_type= OrganisationSovereigntyScore.detect_org_type(hf_model or {}),
         country=           OrganisationSovereigntyScore.detect_country(hf_model or {}, model_id=model_id),
         metadata={
             "source":       "public-ai sovereignty pipeline",
-            "version":      "0.2.0",
+            "version":      "0.3.0",
             "uses_web":     use_web,
             "uses_llm_web": use_llm_web,
         },
